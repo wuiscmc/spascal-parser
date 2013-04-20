@@ -145,9 +145,7 @@ nombre_dv: 		nombre_dv COMA NOM
 					}
 					else
 					{
-						char* msg;
-						fprintf(msg, "Symbol %s is already declared", $3.lexema);
-						yerror(msg);
+						yerror("Variable is already defined");
 
 					}
 					
