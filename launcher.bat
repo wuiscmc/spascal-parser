@@ -1,3 +1,4 @@
+git pull origin master
 bin\flex -Sbin/flex.skl src/lexico.l
 bin\byacc src/sintact.y
 gcc y_tab.c src/symbols_table/table_entry.c src/symbols_table/table.c src/main.c -o ../../procsin.exe
