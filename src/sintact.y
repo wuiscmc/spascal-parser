@@ -145,7 +145,10 @@ nombre_dv: 		nombre_dv COMA NOM
 					}
 					else
 					{
-						yyerror("line %d: Symbol '%s' is already declared", yylineno, $3.lexema);
+						char* msg;
+						fprintf(msg, "Symbol %s is already declared", $3.lexema);
+						yerror(msg);
+
 					}
 					
 				}
