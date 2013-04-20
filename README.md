@@ -1,4 +1,4 @@
 spascal-parser
 ==============
 
-Semantic parser for a spanish based pascal programming language
+Semantic parser for a pascal based programming language
