@@ -139,7 +139,15 @@ decl_var: 		nombre_dv PTOS tipo
 
 nombre_dv: 		nombre_dv COMA NOM 
 				{
-					table_push(ts, table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));
+					if(table_entry_valid(table_find(ts, $3.lexema)))
+					{
+						table_push(ts, table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));	
+					}
+					else
+					{
+						yyerror("line %d: Symbol '%s' is already declared", yylineno, $3.lexema);
+					}
+					
 				}
 				|NOM 
 				{

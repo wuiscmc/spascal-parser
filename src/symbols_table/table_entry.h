@@ -16,7 +16,7 @@ typedef enum {
     VARIABLE,
     PARAMETER,
     RANGE,
-    INVALID
+    NEW
 } type_entry;
 
 typedef enum {

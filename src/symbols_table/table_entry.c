@@ -16,7 +16,7 @@ table_entry table_entry_new()
 {
     table_entry e = {
         e.name = NULL,
-        e.data_type = INVALID,
+        e.data_type = NEW,
         e.entry_type = UNKNOWN,
         e.params = -1,
         e.dims = -1,
@@ -84,7 +84,7 @@ table_entry table_entry_new_array(char* name, int dims, int min_range, int max_r
 
 int table_entry_valid(table_entry symbol)
 {   
-    return symbol.data_type != INVALID;
+    return symbol.data_type == NEW ? 0 : 1;
 }
 
 
@@ -127,7 +127,7 @@ char* entry_type_name(type_entry d)
         case VARIABLE:  res = "variable"; break; 
         case PARAMETER: res = "parameter"; break; 
         case RANGE:     res = "range"; break; 
-        case INVALID:   res = "invalid"; break; 
+        case NEW:   res = "NEW"; break; 
     };
 
     return res; 

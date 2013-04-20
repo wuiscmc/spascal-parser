@@ -52,7 +52,7 @@ int table_empty(table t)
 }
 
 //
-//  Finds an entry in the table and returns a copy, otherwise returns a dummy(invalid) symbol
+//  Finds an entry in the table and returns a copy, otherwise returns a dummy(NEW) symbol
 //
 table_entry table_find(table t, char* id)
 {
@@ -60,7 +60,7 @@ table_entry table_find(table t, char* id)
     table_entry entry = table_entry_new();
     for(i = t->size; table_empty(t) || t->entries[i].entry_type != MARK; i--)
     {
-        if(strcmp(t->entries[i].name, id))
+        if(strcmp(t->entries[i].name, id) == 0)
         {
             entry = t->entries[i];
         }
