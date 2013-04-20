@@ -1,0 +1,74 @@
+programa doomstest; 
+{TDD en PDL2}
+
+funcion multiplica (f1num1: entero): entero;
+	var a, b: entero; 
+
+	funcion test(f2num1: entero, f2num2: entero, f2num3: entero): caracter;
+		var hola, hola2: caracter;
+	inicio
+				hola := 1;
+	fin;
+
+inicio
+			multiplica := num1 * num2;
+fin;
+
+funcion multiplica2 (f1num1: entero): entero;
+	var a, b: entero; 
+
+	funcion test(f2num1: entero, f2num2: entero, f2num3: entero): caracter;
+		var hola, hola2: caracter;
+		funcion multiplica2 (f1num1: entero): entero;
+			var a, b: entero; 
+
+			funcion test(f2num1: entero, f2num2: entero, f2num3: entero): caracter;
+				var hola, hola2: caracter;
+				funcion multiplica2 (f1num1: entero): entero;
+					var a, b: entero; 
+
+					funcion test(f2num1: entero, f2num2: entero, f2num3: entero): caracter;
+						var hola, hola2: caracter;
+						funcion multiplica2 (f1num1: entero): entero;
+							var a, b: entero; 
+
+							funcion test(f2num1: entero, f2num2: entero, f2num3: entero): caracter;
+								var hola, hola2: caracter;
+								
+							inicio
+										hola := 1;
+							fin;
+
+						inicio
+									multiplica := num1 * num2;
+						fin;	
+					inicio
+								hola := 1;
+					fin;
+
+				inicio
+							multiplica := num1 * num2;
+				fin;	
+			inicio
+						hola := 1;
+			fin;
+
+		inicio
+					multiplica := num1 * num2;
+		fin;		
+	inicio
+				hola := 1;
+	fin;
+
+inicio
+			multiplica := num1 * num2;
+fin;
+
+
+var num1, num2 : entero;
+inicio
+	escribe ('1 - El resultado de ', num1,' * ', num2,' = ', multiplica(num1,num2));
+	+num1;
+	-num2;
+	escribe ('2 - El resultado de ', num1,' * ', num2,' = ', multiplica(num1,num2));
+fin.
