@@ -16,6 +16,7 @@ typedef enum {
     VARIABLE,
     PARAMETER,
     RANGE,
+    CUSTOM,
     NEW
 } type_entry;
 
@@ -42,6 +43,14 @@ typedef struct {
     int line;
 } table_entry;
 
+typedef enum {
+    TE_DIFFERENT_NAMES,
+    TE_DIFFERENT_DATA,
+    TE_DIFFERENT_ENTRY,
+    TE_DIFFERENT_ARGS,
+    TE_DIFFERENT_DIMS,
+    TE_SAME_ENTRY
+} table_entry_error_code;
 
 table_entry table_entry_new();
 
@@ -55,6 +64,12 @@ table_entry table_entry_new_variable(char* name, type_data d, int line);
 
 table_entry table_entry_new_parameter(char* name, type_data d, int line);
 
+table_entry table_entry_as_variable(table_entry entry);
+
+int table_entry_compatible_entry_type(table_entry entry1, table_entry entry2);
+
+table_entry_error_code table_entry_compare(table_entry entry1, table_entry entry2);
+
 void table_entry_change_type_data(table_entry* symbol, type_data new_type_data);
 
 void table_entry_display(table_entry symbol);
@@ -63,8 +78,12 @@ int table_entry_valid(table_entry symbol);
 
 int table_entry_begin_scope(table_entry symbol);
 
+int table_entry_compatible_data_type(type_data d1, type_data d2);
+
 char* data_type_name(type_data d);
 
 char* entry_type_name(type_entry e);
+
+char* table_entry_error_code_message(table_entry_error_code code);
 
 #endif

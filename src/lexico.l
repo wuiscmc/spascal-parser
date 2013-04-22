@@ -44,7 +44,7 @@ otros   	.
 [Ee][Nn][Tt][Ee][Rr][Oo]            	return ENT;
 [Cc][Aa][Rr][Aa][Cc][Tt][Ee][Rr]		return CHAR;
 [Bb][Oo][Oo][Ll][Ee][Aa][Nn][Oo]    	return BOOL;
-[Rr][Ee][Aa][Ll]						return REAL;
+[Rr][Ee][Aa][Ll]						return DREAL;
 [Cc][Aa][Dd][Ee][Nn][Aa]				return CAD;
 [Ff][Uu][Nn][Cc][Ii][Oo][Nn]			return FUNC;
 [Ii][Nn][Ii][Cc][Ii][Oo]            	return INIC;
@@ -82,5 +82,5 @@ otros   	.
 
 \'{cadena}*\'       			        return CADTEXTO; 
 
-{otros}									yyerror("ERROR de léxico en la entrada");
+{otros}									yyerror("ERROR de lexico en la entrada");
 %%

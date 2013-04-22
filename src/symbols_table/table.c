@@ -52,22 +52,44 @@ int table_empty(table t)
 }
 
 //
-//  Finds an entry in the table and returns a copy, otherwise returns a dummy(NEW) symbol
+//  Finds an entry in the table and returns its index in the table, otherwise returns -1
 //
-table_entry table_find(table t, char* id)
+int table_find(table t, table_entry entry)
 {
-    int i = 0;
-    table_entry entry = table_entry_new();
-    for(i = t->size; table_empty(t) || t->entries[i].entry_type != MARK; i--)
-    {
-        if(strcmp(t->entries[i].name, id) == 0)
+    int i = t->size-1, index = -1;
+
+    while(t->entries[i].entry_type != MARK){
+        if(table_entry_compatible_entry_type(t->entries[i], entry))
         {
-            entry = t->entries[i];
+            index = i;
+            break;
         }
-    }
-    return entry;
+        i--;
+    }  
+
+    return index;
 }
 
+table_entry table_find_by_name(table t, char* name)
+{
+    int i = t->size-1, index = -1;
+    table_entry e = table_entry_new();
+    
+    while(t->entries[i].entry_type != MARK){
+        if(strcmp(t->entries[i].name, name) == 0)
+        {
+            e = t->entries[i];
+            break;
+        }
+        i--;
+    }  
+    return e; 
+}
+
+table_entry table_get(table t, int index)
+{
+    return t->entries[index];
+}
 table_entry table_top(table t)
 {
     return t->entries[t->size-1];
@@ -89,10 +111,16 @@ int table_update_unassigned_types(table t, type_data type)
 
 void table_pop_scope(table t)
 {
-    while(table_top(t).entry_type != MARK) table_pop(t); //removing the scope elements
+    while(table_top(t).entry_type != MARK)table_pop(t); //removing the scope elements
     table_pop(t); //to remove the begin of scope mark 
 }
 
+
+void table_reset(table t)
+{
+    table_destroy(&t);
+    t = table_new();
+}
 
 void table_destroy(table *t)
 {
@@ -107,7 +135,6 @@ void table_display(table t)
 {
     table_entry entry;
     int i;
-    printf("SIZE: %d\n", t->size);
     for(i = 0; i < t->size; i++)
         table_entry_display(t->entries[i]);
     
