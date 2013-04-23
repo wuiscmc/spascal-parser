@@ -78,7 +78,8 @@ type_data check_function_entries(table_entry efunction, table_entry efunction2)
 		
 			if(!table_entry_compatible_data_type(expected.data_type, received.data_type))
 			{
-				sprintf(msg, "Function '%s' parameter '%d' type missmatch (expected: %s, got: %s)", efunction.name, i , data_type_name(expected.data_type), data_type_name(received.data_type));
+				sprintf(msg, "Function '%s' parameter '%d' type missmatch (expected: %s, got: %s)", 
+					efunction.name, i , data_type_name(expected.data_type), data_type_name(received.data_type));
 				t = UNKNOWN;
 				yyerror(msg);
 			}
@@ -157,6 +158,10 @@ gramática (axioma). Byacc se encarga de asociar a cada uno un código */
 
 //Tokens para el TDA Cadena
 %token INS EXT BUSC BORR
+
+//Tokens para el TDA Lista de enteros
+%token LISTA QMARK DMEN BRACKIZ BRACKDE
+
 %%
 
 //*************************************************************
@@ -236,7 +241,8 @@ tipo: 			ENT 	{ $$.tipo = INTEGER;  }
 				|BOOL 	{ $$.tipo = BOOLEAN;  } 
 				|CAD 	{ $$.tipo = STRING;   } 
 				|CHAR 	{ $$.tipo = CHARACTER;} 
-				|NOM	{ $$.tipo = CUSTOM;  } 
+				|LISTA 	{ $$.tipo = LIST; 	  }
+				|NOM	{ $$.tipo = CUSTOM;   }
 				;
 
 
@@ -266,7 +272,7 @@ funcs:			funcs func
 				;
 
 func:			func_header func_content
-				|func_header PTOCOMA func_dec func_content
+				|func_header func_dec func_content
 				;
 
 func_dec:		vars func_nested
@@ -400,8 +406,47 @@ e_salida: 		CADTEXTO
 				|expr 
 				;
 
-expr :	 		 expr SUM expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo); }
-				|expr REST expr  { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo); }
+expr :	 		 expr SUM expr 	 
+				{ 
+					if($1.tipo == LIST)
+					{
+						$$.tipo = $1.tipo;
+						if($3.tipo != LIST)
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
+							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
+								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
+							yyerror(msg);
+						}
+					}
+					else
+					{
+						type_data at[2] = {INTEGER, REAL}; 
+						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo);
+					}   
+				}
+				|expr REST expr  
+				{ 
+					if($1.tipo == LIST)
+					{
+						$$.tipo = $1.tipo;
+						if($3.tipo != LIST)
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
+							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
+								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
+							yyerror(msg);
+						}
+					}
+					else
+					{
+						type_data at[2] = {INTEGER, REAL}; 
+						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo);
+					}     
+				}
+
 				|expr MULT expr  { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo); }
 				|expr DIV expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo); }
 
@@ -415,8 +460,10 @@ expr :	 		 expr SUM expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_
 					{ 
 						$$.tipo = UNKNOWN; 
 						type_data d = $1.tipo != BOOLEAN ? $1.tipo : $3.tipo;
-						sprintf(msg,"In 'Y' expression, both operands expected to be %s. Got: %s",data_type_name(BOOLEAN), data_type_name(BOOLEAN), data_type_name(d)); 
-						yyerror(msg); 					}  
+						sprintf(msg,"In 'Y' expression, both operands expected to be %s. Got: %s", 
+							data_type_name(BOOLEAN), data_type_name(BOOLEAN), data_type_name(d)); 
+						yyerror(msg); 					
+					}  
 				}
 				|expr O expr
 				{ 
@@ -428,20 +475,71 @@ expr :	 		 expr SUM expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_
 					{ 
 						$$.tipo = UNKNOWN; 
 						type_data d = $1.tipo != BOOLEAN ? $1.tipo : $3.tipo;
-						sprintf(msg,"In 'O' expression, both operands expected to be %s. Got: %s",data_type_name(BOOLEAN), data_type_name(BOOLEAN), data_type_name(d)); 
+						sprintf(msg,"In 'O' expression, both operands expected to be %s. Got: %s", 
+							data_type_name(BOOLEAN), data_type_name(BOOLEAN), data_type_name(d)); 
 						yyerror(msg);
 					}  
 				}
-				
+				|get_item_lista		  	{ $$.tipo = $1.tipo; }
+				|add_item_lista		  	{ $$.tipo = $1.tipo; }
+				|inclusion_item_lista 	{ $$.tipo = $1.tipo; }
+				|esta_vacia_lista		{ $$.tipo = $1.tipo; }
 				|expr MAYIG expr { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);} 
 				|expr MENIG expr { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);}
 				|expr MAY expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);} 	 
 				|expr MEN expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);}
-				|expr DIST expr  { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN); }
-				|expr IGUAL expr { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN); }
+				|expr DIST expr  
+				{ 
+					if($1.tipo == LIST)
+					{
+						$$.tipo = BOOLEAN;
+						if($3.tipo != LIST)
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
+							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
+								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
+							yyerror(msg);
+						}
+					}
+					else
+					{
+						type_data at[2] = {INTEGER, REAL}; 
+						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);
+					} 
+				}
+				|expr IGUAL expr 
+				{ 
+					if($1.tipo != LIST)
+					{
+						type_data at[2] = {INTEGER, REAL}; 
+						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);
+					}
+					else
+					{
+						$$.tipo = BOOLEAN;
+						if($3.tipo != LIST)
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
+							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
+								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
+							yyerror(msg);
+						}
+					}  
+				}
 				
-				|REST expr %prec UMENOS { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $1.tipo, at, 2, $1.tipo);}
-				|SUM expr %prec UMAS 	{ type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $1.tipo, at, 2, $1.tipo);}
+				|REST expr %prec UMENOS 
+				{ 
+					type_data at[2] = {INTEGER, REAL}; 
+					$$.tipo = check_data_types($1.tipo, $1.tipo, at, 2, $1.tipo);
+				}
+
+				|SUM expr %prec UMAS 	
+				{ 
+					type_data at[2] = {INTEGER, REAL}; 
+					$$.tipo = check_data_types($1.tipo, $1.tipo, at, 2, $1.tipo);
+				}
 				
 				|NO expr 		
 				{ 
@@ -452,17 +550,17 @@ expr :	 		 expr SUM expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_
 					else 
 					{ 
 						$$.tipo = UNKNOWN; 
-						sprintf(msg, "Expected: %s Got: %s",data_type_name(BOOLEAN), data_type_name($1.tipo)); 
+						sprintf(msg, "Expected: %s Got: %s", data_type_name(BOOLEAN), data_type_name($1.tipo)); 
 						yyerror(msg);
 					}  
 				}
 				
-				|VERD			{ $$.tipo = BOOLEAN; }
-				|FALSO			{ $$.tipo = BOOLEAN; }
-				|llamada_funcion{ $$.tipo = $1.tipo; }
-				|PIZ expr PDE 	{ $$.tipo = $2.tipo; }
-				|NUM			{ $$.tipo = INTEGER; }
-				|NOMCONS		{ $$.tipo = STRING;	 }
+				|VERD				  	{ $$.tipo = BOOLEAN; }
+				|FALSO				  	{ $$.tipo = BOOLEAN; }
+				|llamada_funcion		{ $$.tipo = $1.tipo; }
+				|PIZ expr PDE 			{ $$.tipo = $2.tipo; }
+				|NUM					{ $$.tipo = INTEGER; }
+				|NOMCONS				{ $$.tipo = STRING;	 }
 				|busca_c 
 				|extrae_c
 				|concat_c
@@ -479,6 +577,7 @@ llamada_funcion: NOM PIZ exprs PDE
 				|NOM
 				{
 					table_entry entry = table_find_by_name(ts, $1.lexema);
+					
 					if(table_entry_valid(entry))
 					{
 						if(entry.entry_type == FUNCTION)
@@ -521,7 +620,8 @@ bucle: 			REPIT sents HASTA expr
 					if($4.tipo != BOOLEAN)
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: '%s'", data_type_name(BOOLEAN), data_type_name($2.tipo));
+						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: '%s'", 
+							data_type_name(BOOLEAN), data_type_name($4.tipo));
 						yyerror(msg);
 					}	
 				}
@@ -531,7 +631,8 @@ bucle: 			REPIT sents HASTA expr
 					if($3.tipo != BOOLEAN)
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: '%s'",data_type_name(BOOLEAN), data_type_name($2.tipo));
+						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: '%s'", 
+							data_type_name(BOOLEAN), data_type_name($3.tipo));
 						yyerror(msg);
 					}
 				}
@@ -547,7 +648,8 @@ condicion: 		SI expr ENTONC bloque_c
 					if($2.tipo != BOOLEAN)
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s",data_type_name(BOOLEAN), data_type_name($2.tipo));
+						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s", 
+							data_type_name(BOOLEAN), data_type_name($2.tipo));
 						yyerror(msg);
 					}
 				}
@@ -557,15 +659,95 @@ condicion: 		SI expr ENTONC bloque_c
 					if( $2.tipo != BOOLEAN )
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s",data_type_name(BOOLEAN), data_type_name($2.tipo));
+						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s", 
+							data_type_name(BOOLEAN), data_type_name($2.tipo));
 						yyerror(msg);
 					}
 				}
 				;
 
 bloque_c: 		sent
-				|INIC sents FIN;
+				|INIC sents FIN
+				;
 
+
+//*************************************************************
+//*************************************************************
+//#####Operaciones asociadas al TDA Lista de enteros
+
+//Recupera un elemento de la lista: variable_lista[entero_indice]
+get_item_lista: 		expr BRACKIZ expr BRACKDE
+						{
+							$$.tipo = INTEGER;
+							if($1.tipo != LIST)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list operand []. Expected: %s Got: %s", 
+									data_type_name(LIST), data_type_name($1.tipo));
+								yyerror(msg);
+							}
+							if($3.tipo != INTEGER)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list operand [] wrong index type. Expected: %s Got: %s", 
+									data_type_name(INTEGER), data_type_name($3.tipo));
+								yyerror(msg);		
+							}		
+						}
+						;
+
+//Añadir un elemento a la lista: variable_lista << elemento
+add_item_lista: 		expr DMEN expr
+						{
+							$$.tipo = LIST;
+							if($1.tipo != LIST)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list << operand. Expected: %s Got: %s", 
+									data_type_name(LIST), data_type_name($1.tipo));
+								yyerror(msg);
+							}
+							if($3.tipo != INTEGER || $3.tipo != LIST)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list << second operand. Expected: %s, %s Got: %s", 
+									data_type_name(INTEGER), data_type_name(LIST), data_type_name($3.tipo));
+								yyerror(msg);
+							}
+						}
+						;
+
+//Inclusion en lista: variable_lista?variable_elemento
+inclusion_item_lista: 	expr QMARK PIZ expr PDE
+						{
+							$$.tipo = BOOLEAN;
+							if($1.tipo != LIST)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list operand ? (inclusion). Expected: %s Got: %s", 
+									data_type_name(LIST), data_type_name($1.tipo));
+								yyerror(msg);
+							}
+							if($4.tipo != INTEGER)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list ? (inclusion) second operand. Expected: %s Got: %s", 
+									data_type_name(INTEGER), data_type_name($4.tipo));
+								yyerror(msg);
+							}
+						}
+
+esta_vacia_lista: 		expr QMARK
+						{
+							$$.tipo = BOOLEAN;
+							if($1.tipo != LIST)
+							{
+								$$.tipo = UNKNOWN;
+								sprintf(msg, "In list operand ? (empty list?) Expected: %s Got: %s", 
+									data_type_name(LIST), data_type_name($1.tipo));
+								yyerror(msg);
+							}
+						}
 
 //*************************************************************
 //*************************************************************

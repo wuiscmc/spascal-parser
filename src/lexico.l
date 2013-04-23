@@ -22,6 +22,7 @@ otros   	.
 "/"     return DIV;
 "*"     return MULT;
 ">"     return MAY;
+"<<"	return DMEN;
 "<"     return MEN;
 ">="   	return MAYIG;
 "<="   	return MENIG;
@@ -35,12 +36,16 @@ otros   	.
 ":"     return PTOS;
 ";"     return PTOCOMA;
 "."     return PTO;
+"?"		return QMARK;
+"["		return BRACKIZ;
+"]"		return BRACKDE;
 
 [Pp][Rr][Oo][Gg][Rr][Aa][Mm][Aa]    	return PROG;
 [Cc][Oo][Nn][Ss][Tt]  					return CONST;
 [Uu][Ss][Aa][Rr]						return USAR;
 [Tt][Ii][Pp][Oo]						return TIPO;
 [Vv][Aa][Rr]        					return VAR;
+[Ll][Ii][Ss][Tt][Aa]					return LISTA;
 [Ee][Nn][Tt][Ee][Rr][Oo]            	return ENT;
 [Cc][Aa][Rr][Aa][Cc][Tt][Ee][Rr]		return CHAR;
 [Bb][Oo][Oo][Ll][Ee][Aa][Nn][Oo]    	return BOOL;

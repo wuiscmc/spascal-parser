@@ -28,6 +28,7 @@ typedef enum {
     SET,
     CHARACTER,
     STRING,
+    LIST,
     UNKNOWN,
     UNASSIGNED
 } type_data;

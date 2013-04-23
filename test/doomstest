@@ -1,27 +1,44 @@
 programa doomstest; 
-{TDD en PDL2}
+{practica PDL2}
 
-funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero;
+funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero
 var 
 	a, b: real;
-	c: real;
+	c: entero;
 	multiplica: real;
-	f1: caracter;
+	
+	li: lista;
 inicio
-		multiplica := b * f1;
+		1+1;
+		a+1;
+		1;
 fin;
-
 var 
 	a, b, num1 : real;
 	num2: caracter;
 	c : entero;
 inicio
 	
-	
-	escribe('cadena', num1, 'cadena',num1,a);
-
-	multiplica(num2,3,num2);
-	si b = c entonces 
-		escribe('1');
+	repite 
+		escribe('cadena', num1, 'cadena',num1,a);
+		multiplica(1,num2,c);
+		si b = c entonces 
+			escribe('1')
+		sino 
+			inicio
+				b+1;
+				li+1;
+				c+b;
+				li<<1;
+				li?;
+				li?(1);
+				li?(b);
+				a?;
+				a?;
+				li<<li;
+			fin
+		;
+		
+	hasta c > num2;
 
 fin.

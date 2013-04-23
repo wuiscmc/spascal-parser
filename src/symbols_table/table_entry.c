@@ -16,8 +16,8 @@ table_entry table_entry_new()
 {
     table_entry e = {
         e.name = NULL,
-        e.data_type = NEW,
-        e.entry_type = UNKNOWN,
+        e.data_type = UNKNOWN,
+        e.entry_type = NEW,
         e.params = -1,
         e.dims = -1,
         e.min_range = -1,
@@ -116,7 +116,7 @@ table_entry table_entry_as_variable(table_entry entry)
 
 int table_entry_valid(table_entry symbol)
 {   
-    return symbol.data_type == NEW ? 0 : 1;
+    return symbol.data_type == UNKNOWN ? 0 : 1;
 }
 
 
@@ -188,6 +188,7 @@ char* data_type_name(type_data d)
         case ARRAY:      res = "array";   break;
         case SET:        res = "conjunto";     break;
         case STRING:     res = "cadena";  break;
+        case LIST:       res = "lista";  break;
         case CHARACTER:  res = "caracter"; break;
         case UNKNOWN:    res = "desconocido"; break;
         case UNASSIGNED: res = "no asignado"; break;              
