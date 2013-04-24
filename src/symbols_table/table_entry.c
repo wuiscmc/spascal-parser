@@ -59,6 +59,13 @@ table_entry table_entry_new_constant(char*name, type_data data_type, int line)
     return e;
 }
 
+table_entry table_entry_new_type_alias(char* name, type_data data_type, int line)
+{
+    table_entry e = table_entry_new_variable(name, data_type, line);
+    e.entry_type = CUSTOM;
+    return e;
+}
+
 table_entry table_entry_new_type(char* name, char* data_type_name)
 {
     table_entry e = table_entry_new();
@@ -130,6 +137,20 @@ int table_entry_begin_scope(table_entry symbol)
     return symbol.entry_type == MARK ? 1 : 0;
 }
 
+int table_entry_is_basic_data_type(char* name)
+{
+    
+    if ( strcmp(data_type_name(INTEGER)  , name) == 0 ) return 1;
+    if ( strcmp(data_type_name(REAL)     , name) == 0 ) return 1;     
+    if ( strcmp(data_type_name(BOOLEAN)  , name) == 0 ) return 1;
+    if ( strcmp(data_type_name(STRING)   , name) == 0 ) return 1; 
+    if ( strcmp(data_type_name(CHARACTER), name) == 0 ) return 1;
+    if ( strcmp(data_type_name(LIST)     , name) == 0 ) return 1;
+
+
+    return 0;
+}
+
 table_entry_error_code table_entry_compare(table_entry entry1, table_entry entry2)
 {
     
@@ -191,7 +212,8 @@ char* data_type_name(type_data d)
         case LIST:       res = "lista";       break;
         case CHARACTER:  res = "caracter";    break;
         case UNKNOWN:    res = "desconocido"; break;
-        case UNASSIGNED: res = "no asignado"; break;              
+        case UNASSIGNED: res = "no asignado"; break;
+        case ALIAS:      res = "alias"; break;              
     };
     return res; 
 }
@@ -209,6 +231,7 @@ char* entry_type_name(type_entry d)
         case RANGE:     res = "rango";        break; 
         case CONSTANT:  res = "constante";    break;
         case NEW:       res = "nuevo";        break; 
+        case CUSTOM:    res = "personalizado";break;
     };
 
     return res; 

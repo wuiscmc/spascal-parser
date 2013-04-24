@@ -51,36 +51,22 @@ int table_empty(table t)
     return t->size == 0;
 }
 
+
 //
 //  Finds an entry in the table and returns its index in the table, otherwise returns -1
 //
 int table_find(table t, table_entry entry)
 {
-    int i = t->size-1, index = -1;
+    int index;
 
-    if(entry.entry_type == CONSTANT)
+    switch(entry.entry_type)
     {
-        while(i>=0)
-        {
-            if(table_entry_compatible_entry_type(t->entries[i], entry))
-            {
-                index = i;
-                break;
-            }
-            i--;
-        }
-    }
-    else
-    {
-        while(t->entries[i].entry_type != MARK)
-        {
-            if(table_entry_compatible_entry_type(t->entries[i], entry))
-            {
-                index = i;
-                break;
-            }
-            i--;
-        }  
+        case CUSTOM:
+            index = table_find_custom(t, entry.name);break;
+        case CONSTANT: 
+            index = table_find_constant(t, entry);   break;
+        default: 
+            index = table_find_symbol(t, entry);
     }
 
     return index;
@@ -111,6 +97,22 @@ table_entry table_top(table t)
     return t->entries[t->size-1];
 }
 
+
+int table_update_unassigned_types_with_custom(table t, char* name)
+{
+    
+    table_entry tmp = table_entry_new_type_alias(name, ALIAS, 0);
+
+    int index = table_find(t, tmp);
+    if(index < 0)
+    {
+        return index;
+    }
+    else
+    {
+        return table_update_unassigned_types(t, table_get(t, index).data_type);
+    }
+}
 //
 //  Updates the data types of those symbols with UNASSIGNED type
 //
@@ -149,10 +151,58 @@ void table_destroy(table *t)
 //
 void table_display(table t)
 {
-    table_entry entry;
     int i;
     for(i = 0; i < t->size; i++)
+    {
         table_entry_display(t->entries[i]);
+    }
     
     printf("\n");
+}
+
+// HELPERS
+
+int table_find_custom(table t, char* entry_name)
+{
+    int i = t->size -1, index = -1;
+    while(i>=0)
+    {
+        if(t->entries[i].entry_type == CUSTOM && strcmp(t->entries[i].name, entry_name) == 0)
+        {
+            index = i;
+            break;
+        }
+        i--;
+    }
+    return index;
+}
+
+int table_find_constant(table t, table_entry entry)
+{
+    int i = t->size -1, index = -1;
+    while(i>=0)
+    {
+        if(table_entry_compatible_entry_type(t->entries[i], entry))
+        {
+            index = i;
+            break;
+        }
+        i--;
+    }
+    return index;
+}
+
+int table_find_symbol(table t, table_entry entry)
+{
+    int i = t->size -1, index = -1;
+    while(t->entries[i].entry_type != MARK)
+    {
+        if(table_entry_compatible_entry_type(t->entries[i], entry))
+        {
+            index = i;
+            break;
+        }
+        i--;
+    }
+    return index;
 }

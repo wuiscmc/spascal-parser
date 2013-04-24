@@ -34,7 +34,14 @@ void yyerror (char *msg)
 void push_to_table(table_entry e)
 {
 	int index_table = table_find(ts, e);
-	if(index_table < 0)
+	int index_alias = table_find(ts, table_entry_new_type_alias(e.name, ALIAS, 0));
+
+	if( index_alias >= 0 )
+	{
+		sprintf(msg, "'%s' is a name of a type", e.name);
+		yyerror(msg);
+	}
+	else if(index_table < 0)
 	{
 		table_push(ts, e);
 	}
@@ -70,7 +77,7 @@ type_data check_function_entries(table_entry efunction, table_entry efunction2)
 	else
 	{
 		t = UNKNOWN;
-		sprintf(msg, "Undefined reference to function %s", efunction.name);
+		sprintf(msg, "Undefined reference to %s", efunction.name);
 		yyerror(msg);
 	}
 
@@ -256,6 +263,30 @@ nombress: 		nombress def_tipo
 				;
 
 def_tipo: 		NOM IGUAL tipo PTOCOMA
+				{
+					table_entry alias = table_entry_new_type_alias($1.lexema, $3.tipo, yylineno);
+					int index_alias = table_find(ts, alias);
+					if( index_alias < 0)
+					{
+						if( table_entry_is_basic_data_type(data_type_name($3.tipo)))
+						{
+							table_push(ts, alias);
+						}
+						else
+						{
+							sprintf(msg, "Type '%s' can not be an alias of '%s' since '%s' is not a base type", 
+								alias.name, $3.lexema, $3.lexema);
+							yyerror(msg);	
+						}
+
+					}
+					else
+					{
+						table_entry e = table_get(ts, index_alias);
+						sprintf(msg, "Type %s is already defined here: line %d", e.name, e.line );
+						yyerror(msg);
+					}
+				}
 				;
 
 tipo: 			ENT 	{ $$.tipo = INTEGER;  } 
@@ -264,7 +295,7 @@ tipo: 			ENT 	{ $$.tipo = INTEGER;  }
 				|CAD 	{ $$.tipo = STRING;   } 
 				|CHAR 	{ $$.tipo = CHARACTER;} 
 				|LISTA 	{ $$.tipo = LIST; 	  }
-				|NOM	{ $$.tipo = CUSTOM;   }
+				|NOM	{ $$.tipo = ALIAS;	  }   
 				;
 
 
@@ -278,7 +309,25 @@ decl_vars: 		 decl_vars decl_var PTOCOMA
 				|decl_var PTOCOMA
 				;
 
-decl_var: 		nombre_dv PTOS tipo { table_update_unassigned_types(ts, $3.tipo); }
+decl_var: 		nombre_dv PTOS tipo 
+				{ 
+
+					if(table_entry_is_basic_data_type(data_type_name($3.tipo)))
+					{
+						table_update_unassigned_types(ts, $3.tipo); 	
+					}
+					else
+					{
+						int index = table_update_unassigned_types_with_custom(ts, $3.lexema);
+						if(index < 0)
+						{
+							sprintf(msg, "'%s' is not a valid data type", $3.lexema);
+							yyerror(msg);
+						}
+					}
+
+					
+				}
 				;
 nombre_dv: 		nombre_dv COMA NOM 	{ push_to_table(table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));	}
 				|NOM 				{ push_to_table(table_entry_new_variable($1.lexema, UNASSIGNED, yylineno));	}
@@ -612,6 +661,7 @@ llamada_funcion: NOM PIZ exprs PDE
 				}
 				|NOM
 				{
+
 					table_entry entry = table_find_by_name(ts, $1.lexema);
 					
 					if(table_entry_valid(entry))
@@ -743,7 +793,7 @@ add_item_lista: 		expr DMEN expr
 									data_type_name(LIST), data_type_name($1.tipo));
 								yyerror(msg);
 							}
-							if($3.tipo != INTEGER || $3.tipo != LIST)
+							if($3.tipo != INTEGER && $3.tipo != LIST)
 							{
 								$$.tipo = UNKNOWN;
 								sprintf(msg, "In list << second operand. Expected: %s, %s Got: %s", 

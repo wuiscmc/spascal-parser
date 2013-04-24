@@ -6,18 +6,22 @@ const
 	AC=VERDADERO;
 	BC=FALSO;
 
-funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero
+tipo 
+	eso = lista;
+
+funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero,
 var
 	a, b: real;
-	funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero
+	funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero,
 	var 
-		a, b: real;
-		li: lista;
+		
+		a: eso;
+		b:real;
 	inicio
 		BC;
 		si AC entonces
-			si AC entonces
-				PDL + 1 + PDL + 123123123 + b + a + 123123
+			si a entonces
+				PDL + a
 		;
 	fin;
 				
@@ -30,13 +34,22 @@ var
 	a, b, num1 : real;
 	num2: entero;
 	c : caracter;
-
+	pdl: eso;
+	pdl2: lista;
 inicio
 	repite
 		si AC entonces
 			si PDL = 2 entonces
 				PDL
 		;
-		multiplica(1,c,2);
-	hasta num2 > 0;
+		PDL + a;
+		multiplica(1,c,a);
+	hasta pdl > VERDADERO;
+
+	PDL + pdl2;
+	pdl?(c);
+	pdl2?(c);
+	pdl2<<c;
+	b + PDL;
+
 fin.

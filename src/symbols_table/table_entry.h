@@ -31,7 +31,8 @@ typedef enum {
     STRING,
     LIST,
     UNKNOWN,
-    UNASSIGNED
+    UNASSIGNED,
+    ALIAS
 } type_data;
 
 typedef struct {
@@ -66,6 +67,8 @@ table_entry table_entry_new_variable(char* name, type_data d, int line);
 
 table_entry table_entry_new_constant(char*name, type_data data_type, int line);
 
+table_entry table_entry_new_type_alias(char* name, type_data type, int line);
+
 table_entry table_entry_new_parameter(char* name, type_data d, int line);
 
 table_entry table_entry_as_variable(table_entry entry);
@@ -83,6 +86,8 @@ int table_entry_valid(table_entry symbol);
 int table_entry_begin_scope(table_entry symbol);
 
 int table_entry_compatible_data_type(type_data d1, type_data d2);
+
+int table_entry_is_basic_data_type(char* name);
 
 char* data_type_name(type_data d);
 

@@ -76,6 +76,8 @@ otros   	.
 {letraMay}({letraMay})*					yylval.lexema = strdup(yytext); return NOMCONS;
 {letra}({digito}|{letra})*		      	yylval.lexema = strdup(yytext); return NOM;
 {digito}+                             	yylval.lexema = strdup(yytext); return NUM;
+
+
 " "+ 	                                ;
 \n                                      yylineno++;
 \t                                     	;

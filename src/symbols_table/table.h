@@ -38,6 +38,8 @@ void table_pop_scope(table t);
 
 int table_update_unassigned_types(table t, type_data type);
 
+int table_update_unassigned_types_with_custom(table t, char* name);
+
 table_entry table_get(table t,int index);
 
 #endif
