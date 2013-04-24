@@ -306,7 +306,7 @@ func_nested: 	func
 				|func_nested
 				;
 
-func_header: 	FUNC NOM PIZ params PDE PTOS tipo 
+func_header: 	FUNC NOM PIZ params PDE PTOS tipo COMA
 				{ 
 					int i = $4.entero;  
 					table tsf1 = table_new(), tsf2 = table_new();
@@ -408,7 +408,7 @@ asignacion: 	NOM ASIG expr
 					else 
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg, "'%s' not defined", entry.name);
+						sprintf(msg, "'%s' not defined", $1.lexema);
 						yyerror(msg);
 					}
 				}
@@ -554,13 +554,13 @@ expr :	 		 expr SUM expr
 				|REST expr %prec UMENOS 
 				{ 
 					type_data at[2] = {INTEGER, REAL}; 
-					$$.tipo = check_data_types($1.tipo, $1.tipo, at, 2, $1.tipo);
+					$$.tipo = check_data_types($2.tipo, $2.tipo, at, 2, $2.tipo);
 				}
 
 				|SUM expr %prec UMAS 	
 				{ 
 					type_data at[2] = {INTEGER, REAL}; 
-					$$.tipo = check_data_types($1.tipo, $1.tipo, at, 2, $1.tipo);
+					$$.tipo = check_data_types($2.tipo, $2.tipo, at, 2, $2.tipo);
 				}
 				
 				|NO expr 		
