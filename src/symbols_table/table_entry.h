@@ -17,6 +17,7 @@ typedef enum {
     PARAMETER,
     RANGE,
     CUSTOM,
+    CONSTANT,
     NEW
 } type_entry;
 
@@ -62,6 +63,8 @@ table_entry table_entry_new_mark(int line);
 table_entry table_entry_new_function(char* name, int params, type_data d, int line);
 
 table_entry table_entry_new_variable(char* name, type_data d, int line);
+
+table_entry table_entry_new_constant(char*name, type_data data_type, int line);
 
 table_entry table_entry_new_parameter(char* name, type_data d, int line);
 

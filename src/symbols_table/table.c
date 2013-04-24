@@ -58,14 +58,30 @@ int table_find(table t, table_entry entry)
 {
     int i = t->size-1, index = -1;
 
-    while(t->entries[i].entry_type != MARK){
-        if(table_entry_compatible_entry_type(t->entries[i], entry))
+    if(entry.entry_type == CONSTANT)
+    {
+        while(i>=0)
         {
-            index = i;
-            break;
+            if(table_entry_compatible_entry_type(t->entries[i], entry))
+            {
+                index = i;
+                break;
+            }
+            i--;
         }
-        i--;
-    }  
+    }
+    else
+    {
+        while(t->entries[i].entry_type != MARK)
+        {
+            if(table_entry_compatible_entry_type(t->entries[i], entry))
+            {
+                index = i;
+                break;
+            }
+            i--;
+        }  
+    }
 
     return index;
 }

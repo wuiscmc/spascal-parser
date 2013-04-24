@@ -31,17 +31,25 @@ void yyerror (char *msg)
 	fprintf(stderr,msg);
 }
 
-void push_to_table(table t, table_entry e)
+void push_to_table(table_entry e)
 {
-	int index_table = table_find(t, e);
+	int index_table = table_find(ts, e);
 	if(index_table < 0)
 	{
-		table_push(t, e);
+		table_push(ts, e);
 	}
 	else 
 	{
-		table_entry e = table_get(t, index_table);
-		sprintf(msg, "'%s' previously declared here (line %d)", e.name, e.line); 
+		table_entry e = table_get(ts, index_table);
+		if(e.entry_type != CONSTANT)
+		{
+			sprintf(msg, "'%s' previously declared here (line %d)", e.name, e.line);	
+		}
+		else
+		{
+			sprintf(msg, "'%s' is already declared as a constant. Cannot redefine it", e.name);
+		}
+		 
 		yyerror(msg);
 	}
 }
@@ -176,27 +184,29 @@ strt:			{
 				prog
 				{ 
 					table_pop_scope(ts);
-					table_display(ts); 
 					table_destroy(&ts);
-					table_destroy(&ts_parameters); 
+					table_destroy(&ts_parameters);
 				}
 				;
 
 prog: 			 PROG NOM PTOCOMA dec1 dec2 cuerpo
 				|PROG NOM PTOCOMA dec1 cuerpo
 				|PROG NOM PTOCOMA dec2 cuerpo
-				|PROG NOM PTOCOMA cuerpo;
+				|PROG NOM PTOCOMA cuerpo
+				;
 
 dec1:	 		 librerias constantes def_tipos
 				|librerias def_tipos
 				|constantes def_tipos
 				|librerias
 				|constantes
-				|def_tipos;
+				|def_tipos
+				;
 
 dec2: 			funcs vars 
 				|funcs
-				|vars;
+				|vars
+				;
 
 //*************************************************************
 //*************************************************************
@@ -205,17 +215,29 @@ librerias: 		USAR nombres PTOCOMA;
 
 nombres: 		nombres COMA NOM |NOM;
 
-
 //*************************************************************
 //*************************************************************
 //Definicion de Constantes
-constantes: 	CONST conss;
+constantes: 	CONST conss
+				;
 
 conss: 			conss cons
 				|cons
 				;
 
 cons: 			NOMCONS IGUAL val_cons PTOCOMA
+				{
+					table_entry const_entry = table_entry_new_constant($1.lexema, $3.tipo, yylineno);
+					if( table_find(ts, const_entry) < 0 )
+					{
+						table_push(ts, const_entry);
+					}
+					else
+					{
+						sprintf(msg, "CONSTANT '%s' was already defined here: line %d", const_entry.name, const_entry.line);
+						yyerror(msg);
+					}	
+				}
 				;
 
 val_cons: 		VERD 	{ $$.tipo = BOOLEAN; }
@@ -258,8 +280,8 @@ decl_vars: 		 decl_vars decl_var PTOCOMA
 
 decl_var: 		nombre_dv PTOS tipo { table_update_unassigned_types(ts, $3.tipo); }
 				;
-nombre_dv: 		nombre_dv COMA NOM 	{ push_to_table(ts, table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));	}
-				|NOM 				{ push_to_table(ts, table_entry_new_variable($1.lexema, UNASSIGNED, yylineno));	}
+nombre_dv: 		nombre_dv COMA NOM 	{ push_to_table(table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));	}
+				|NOM 				{ push_to_table(table_entry_new_variable($1.lexema, UNASSIGNED, yylineno));	}
 				;
 
 
@@ -295,7 +317,7 @@ func_header: 	FUNC NOM PIZ params PDE PTOS tipo
 						table_push(tsf2, e);
 					}
 
-					push_to_table(ts, table_entry_new_function($2.lexema, $4.entero, $7.tipo, yylineno));	
+					push_to_table(table_entry_new_function($2.lexema, $4.entero, $7.tipo, yylineno));	
 
 					// push the function parameters again 
 					while(!table_empty(tsf1)) table_push(ts, table_pop(tsf1));
@@ -318,7 +340,7 @@ func_header: 	FUNC NOM PIZ params PDE PTOS tipo
 				}
 				|FUNC NOM PTOS tipo
 				{
-					push_to_table(ts, table_entry_new_function($2.lexema, 0, $4.tipo, yylineno));
+					push_to_table(table_entry_new_function($2.lexema, 0, $4.tipo, yylineno));
 					table_push(ts, table_entry_new_mark(yylineno));
 				}
 				;
@@ -349,7 +371,7 @@ params:			params COMA param
 
 param: 			NOM PTOS tipo 
 				{ 
-					push_to_table(ts, table_entry_new_parameter($1.lexema, $3.tipo, yylineno)); 
+					push_to_table(table_entry_new_parameter($1.lexema, $3.tipo, yylineno)); 
 				}
 				;
 
@@ -560,7 +582,21 @@ expr :	 		 expr SUM expr
 				|llamada_funcion		{ $$.tipo = $1.tipo; }
 				|PIZ expr PDE 			{ $$.tipo = $2.tipo; }
 				|NUM					{ $$.tipo = INTEGER; }
-				|NOMCONS				{ $$.tipo = STRING;	 }
+				|NOMCONS				
+				{ 
+					table_entry const_entry = table_entry_new_constant($1.lexema, CONSTANT, 0);
+					int index_const = table_find(ts, const_entry);
+					if(index_const < 0)
+					{
+						$$.tipo = UNKNOWN;
+						sprintf(msg,"Constant '%s' undefined",$1.lexema);
+						yyerror(msg);
+					}
+					else
+					{
+						$$.tipo = table_get(ts, index_const).data_type;
+					}	 
+				}
 				|busca_c 
 				|extrae_c
 				|concat_c

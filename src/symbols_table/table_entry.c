@@ -39,25 +39,25 @@ table_entry table_entry_new_variable(char* name, type_data data_type, int line)
 
 table_entry table_entry_new_function(char* name, int params, type_data data_type, int line)
 {
-    
-    table_entry e = table_entry_new();
-    e.name = strdup(name);
-    e.data_type = data_type;
+    table_entry e = table_entry_new_variable(name, data_type, line);
     e.entry_type = FUNCTION;
     e.params = params;
-    e.line = line;
     return e;
 }
 
 table_entry table_entry_new_parameter(char* name, type_data data_type, int line)
 {
-    table_entry e = table_entry_new();
-    e.name = strdup(name);
+    table_entry e = table_entry_new_variable(name, data_type, line);
     e.entry_type = PARAMETER;
-    e.data_type = data_type;
-    e.line = line;
     return e;
 } 
+
+table_entry table_entry_new_constant(char*name, type_data data_type, int line)
+{
+    table_entry e = table_entry_new_variable(name, data_type, line);
+    e.entry_type = CONSTANT;
+    return e;
+}
 
 table_entry table_entry_new_type(char* name, char* data_type_name)
 {
@@ -182,14 +182,14 @@ char* data_type_name(type_data d)
 {
     char* res; 
     switch(d){
-        case BOOLEAN:    res = "booleano"; break;
-        case INTEGER:    res = "entero"; break;
-        case REAL:       res = "real";    break;
-        case ARRAY:      res = "array";   break;
-        case SET:        res = "conjunto";     break;
-        case STRING:     res = "cadena";  break;
-        case LIST:       res = "lista";  break;
-        case CHARACTER:  res = "caracter"; break;
+        case BOOLEAN:    res = "booleano";    break;
+        case INTEGER:    res = "entero";      break;
+        case REAL:       res = "real";        break;
+        case ARRAY:      res = "array";       break;
+        case SET:        res = "conjunto";    break;
+        case STRING:     res = "cadena";      break;
+        case LIST:       res = "lista";       break;
+        case CHARACTER:  res = "caracter";    break;
         case UNKNOWN:    res = "desconocido"; break;
         case UNASSIGNED: res = "no asignado"; break;              
     };
@@ -201,13 +201,14 @@ char* entry_type_name(type_entry d)
 {
     char* res; 
     switch(d){
-        case MARK:      res = "marca"; break; 
-        case PROCEDURE: res = "procedimiento"; break; 
-        case FUNCTION:  res = "funcion"; break; 
-        case VARIABLE:  res = "variable"; break; 
-        case PARAMETER: res = "parametro"; break; 
-        case RANGE:     res = "rango"; break; 
-        case NEW:       res = "nuevo"; break; 
+        case MARK:      res = "marca";        break; 
+        case PROCEDURE: res = "procedimiento";break; 
+        case FUNCTION:  res = "funcion";      break; 
+        case VARIABLE:  res = "variable";     break; 
+        case PARAMETER: res = "parametro";    break; 
+        case RANGE:     res = "rango";        break; 
+        case CONSTANT:  res = "constante";    break;
+        case NEW:       res = "nuevo";        break; 
     };
 
     return res; 

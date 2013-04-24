@@ -1,44 +1,42 @@
 programa doomstest; 
 {practica PDL2}
 
+const
+	PDL=2123123;
+	AC=VERDADERO;
+	BC=FALSO;
+
 funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero
-var 
+var
 	a, b: real;
-	c: entero;
-	multiplica: real;
-	
-	li: lista;
+	funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero
+	var 
+		a, b: real;
+		li: lista;
+	inicio
+		BC;
+		si AC entonces
+			si AC entonces
+				PDL + 1 + PDL + 123123123 + b + a + 123123
+		;
+	fin;
+				
 inicio
-		1+1;
-		a+1;
-		1;
+	BC;
+	AC;
 fin;
+
 var 
 	a, b, num1 : real;
-	num2: caracter;
-	c : entero;
-inicio
-	
-	repite 
-		escribe('cadena', num1, 'cadena',num1,a);
-		multiplica(1,num2,c);
-		si b = c entonces 
-			escribe('1')
-		sino 
-			inicio
-				b+1;
-				li+1;
-				c+b;
-				li<<1;
-				li?;
-				li?(1);
-				li?(b);
-				a?;
-				a?;
-				li<<li;
-			fin
-		;
-		
-	hasta c > num2;
+	num2: entero;
+	c : caracter;
 
+inicio
+	repite
+		si AC entonces
+			si PDL = 2 entonces
+				PDL
+		;
+		multiplica(1,c,2);
+	hasta num2 > 0;
 fin.
