@@ -706,7 +706,7 @@ bucle: 			REPIT sents HASTA expr
 					if($4.tipo != BOOLEAN)
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: '%s'", 
+						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: %s", 
 							data_type_name(BOOLEAN), data_type_name($4.tipo));
 						yyerror(msg);
 					}	
@@ -717,7 +717,7 @@ bucle: 			REPIT sents HASTA expr
 					if($3.tipo != BOOLEAN)
 					{
 						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: '%s'", 
+						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: %s", 
 							data_type_name(BOOLEAN), data_type_name($3.tipo));
 						yyerror(msg);
 					}
@@ -731,7 +731,7 @@ bucle: 			REPIT sents HASTA expr
 condicion: 		SI expr ENTONC bloque_c 
 				{
 					$$.tipo = $2.tipo;
-					if($2.tipo != BOOLEAN)
+					if($2.tipo != BOOLEAN )
 					{
 						$$.tipo = UNKNOWN;
 						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s", 
