@@ -31,10 +31,13 @@ FILE *abrir_salida()
 int main(int argc,char **argv)
 {
 	int val;
-	
+
 	yyin=abrir_entrada(argc,argv);
 	//yyout=abrir_salida();
-       
-	return yyparse();
+	
+	int parse = yyparse();
+	printf("\n\n\n");
+
+	return parse;
 
 }
