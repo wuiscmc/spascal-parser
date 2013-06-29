@@ -122,7 +122,7 @@ table_entry table_entry_as_variable(table_entry entry)
 
 
 int table_entry_valid(table_entry symbol)
-{   
+{           
     return symbol.data_type == UNKNOWN ? 0 : 1;
 }
 
@@ -214,6 +214,8 @@ char* data_type_name(type_data d)
         case UNKNOWN:    res = "desconocido"; break;
         case UNASSIGNED: res = "no asignado"; break;
         case ALIAS:      res = "alias"; break;              
+        default:
+            res = "HAAA";
     };
     return res; 
 }
@@ -246,7 +248,7 @@ char* table_entry_error_code_message(table_entry_error_code code)
         case TE_DIFFERENT_NAMES: res = "different names"; break;
         case TE_DIFFERENT_DATA:  res = "different type data"; break;
         case TE_DIFFERENT_ENTRY: res = "different entry"; break;
-        case TE_DIFFERENT_ARGS:  res = "different number of arguments"; break;
+        case TE_DIFFERENT_ARGS:  res = "wrong arity"; break;
         case TE_DIFFERENT_DIMS:  res = "different dimensions"; break; 
         case TE_SAME_ENTRY:      res = "same entry"; break;
     };

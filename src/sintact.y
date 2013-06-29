@@ -16,6 +16,9 @@ typedef struct {
 
 #define YYSTYPE atributos
 
+//#define DISPLAY_TABLE_FUNCTION_SCOPE
+//#define LOCK_NESTED_FUNCTION_SCOPE
+
 table ts;
 table ts_parameters;
 char msg[1000];
@@ -31,137 +34,28 @@ void yyerror (char *msg)
 	fprintf(stderr,msg);
 }
 
-void push_to_table(table_entry e)
-{
-	int index_table = table_find(ts, e);
-	int index_alias = table_find(ts, table_entry_new_type_alias(e.name, ALIAS, 0));
-
-	if( index_alias >= 0 )
-	{
-		sprintf(msg, "'%s' is a name of a type", e.name);
-		yyerror(msg);
-	}
-	else if(index_table < 0)
-	{
-		table_push(ts, e);
-	}
-	else 
-	{
-		table_entry e = table_get(ts, index_table);
-		if(e.entry_type != CONSTANT)
-		{
-			sprintf(msg, "'%s' previously declared here (line %d)", e.name, e.line);	
-		}
-		else
-		{
-			sprintf(msg, "'%s' is already declared as a constant. Cannot redefine it", e.name);
-		}
-		 
-		yyerror(msg);
-	}
-}
-
-type_data check_function_entries(table_entry efunction, table_entry efunction2)
-{
-	type_data t = efunction.data_type;
-	if(table_entry_valid(efunction))
-	{
-		table_entry_error_code code = table_entry_compare(efunction, efunction2); 
-		if(code != TE_SAME_ENTRY)
-		{
-			t = UNKNOWN;
-			sprintf(msg, "Undefined call to function %s: %s",efunction.name, table_entry_error_code_message(code));
-			yyerror(msg);
-		}
-	}
-	else
-	{
-		t = UNKNOWN;
-		sprintf(msg, "Undefined reference to %s", efunction.name);
-		yyerror(msg);
-	}
-
-	if( t != UNKNOWN && efunction.params > 0)
-	{
-		int index = table_find(ts, efunction);
-		int i = efunction.params;
-		table_entry expected, received;  
-		while(!table_empty(ts_parameters))
-		{
-			expected = table_get(ts, index + i);
-			received = table_pop(ts_parameters);
-		
-			if(!table_entry_compatible_data_type(expected.data_type, received.data_type))
-			{
-				sprintf(msg, "Function '%s' parameter '%d' type missmatch (expected: %s, got: %s)", 
-					efunction.name, i , data_type_name(expected.data_type), data_type_name(received.data_type));
-				t = UNKNOWN;
-				yyerror(msg);
-			}
-			i--;
-		}
-	}
-
-
-	return t;
-}
-
-type_data check_data_type(type_data type, type_data* accepted_types, int n_accepted_types)
-{
-	int i, index = -1;
-	for(i = 0; i < n_accepted_types; i++)
-	{
-		if(type == accepted_types[i]) index = i;
-	}
-	if(index < 0)
-	{
-		sprintf(msg,"Incompatible types. Expected:");
-		for(i = 0; i < n_accepted_types; i++)
-		{
-			sprintf(msg, "%s %s,", msg, data_type_name(accepted_types[i]));
-		}
-
-		sprintf(msg, "%s Got: %s",msg, data_type_name(type));
-		yyerror(msg);
-
-		return UNKNOWN;
-	
-	}
-	else
-	{
-		return accepted_types[index];
-	}
-}
-type_data check_data_types(type_data d1, type_data d2, type_data* accepted_types, int n_accepted_types, type_data expected_type)
-{
-	type_data res = expected_type;
-
-	if( check_data_type(d1, accepted_types, n_accepted_types) == UNKNOWN
-	 || check_data_type(d2, accepted_types, n_accepted_types) == UNKNOWN )
-	{
-		res = UNKNOWN;
-	}
-	return res;	
-}
-
-
-type_data check_data_types_operation(type_data d1, type_data d2 )
-{
-	type_data t = d1;
-	if(!table_entry_compatible_data_type(d1, d2))
-	{
-		t = UNKNOWN;
-	}
-	return d1;
-}
-
-
 %}
 
 /* A continuación declaramos los nombres simbólicos de los tokens, así como el símbolo inicial de la
 gramática (axioma). Byacc se encarga de asociar a cada uno un código */
 %start strt
-%token NUM ASIG BOOL CAD CHAR COMA COMILLSIMPLE COMENT CONCAT CONST ENT ENTONC ESC FALSO FIN FUNC HASTA INIC LEE LONG NOM NOMCONS PDE PIZ PROG PTO PTOCOMA PTOS DREAL REPIT SI SINO TIPO USAR VAR VERD CADTEXTO
+
+%token PROG USAR CONCAT CONST TIPO FUNC INIC FIN
+%token LEE ESC
+
+// symbols 
+%token VAR ASIG PDE PIZ PTOCOMA PTO COMA PTOS COMILLSIMPLE COMENT 
+
+//if-repeat statement
+%token REPIT HASTA
+%token SI SINO ENTONC
+
+// raw types 
+%token NUM  NUMREAL NOM NOMCONS CADTEXTO CAD CAR
+%token FALSO VERD
+
+// types
+%token LONG DREAL BOOL CHAR ENT
 
 //Precedencia de operaciones
 %left 	SUM REST
@@ -183,37 +77,29 @@ gramática (axioma). Byacc se encarga de asociar a cada uno un código */
 //*************************************************************
 /* Sección de producciones que definen la gramática */
 
-strt:			{ 
-					ts = table_new(); 
-					ts_parameters = table_new(); 
-					table_push(ts, table_entry_new_mark(yylineno)); 
-				} 
-				prog
-				{ 
-					table_pop_scope(ts);
-					table_destroy(&ts);
-					table_destroy(&ts_parameters);
-				}
-				;
+strt:			{ ts = table_new(); ts_parameters = table_new(); table_push(ts, table_entry_new_mark(yylineno)); } 
+			prog
+				{ table_pop_scope(ts); table_destroy(&ts); table_destroy(&ts_parameters); }
+			;
 
-prog: 			 PROG NOM PTOCOMA dec1 dec2 cuerpo
-				|PROG NOM PTOCOMA dec1 cuerpo
-				|PROG NOM PTOCOMA dec2 cuerpo
-				|PROG NOM PTOCOMA cuerpo
-				;
+prog: 		PROG NOM PTOCOMA dec1 dec2 cuerpo
+			|PROG NOM PTOCOMA dec1 cuerpo
+			|PROG NOM PTOCOMA dec2 cuerpo
+			|PROG NOM PTOCOMA cuerpo
+			;
 
-dec1:	 		 librerias constantes def_tipos
-				|librerias def_tipos
-				|constantes def_tipos
-				|librerias
-				|constantes
-				|def_tipos
-				;
+dec1:	 	 librerias constantes def_tipos
+			|librerias def_tipos
+			|constantes def_tipos
+			|librerias
+			|constantes
+			|def_tipos
+			;
 
-dec2: 			funcs vars 
-				|funcs
-				|vars
-				;
+dec2: 		funcs vars 
+			|funcs
+			|vars
+			;
 
 //*************************************************************
 //*************************************************************
@@ -225,14 +111,14 @@ nombres: 		nombres COMA NOM |NOM;
 //*************************************************************
 //*************************************************************
 //Definicion de Constantes
-constantes: 	CONST conss
-				;
+constantes: CONST conss
+			;
 
-conss: 			conss cons
-				|cons
-				;
+conss: 		conss cons
+			|cons
+			;
 
-cons: 			NOMCONS IGUAL val_cons PTOCOMA
+cons:		NOMCONS IGUAL val_cons PTOCOMA
 				{
 					table_entry const_entry = table_entry_new_constant($1.lexema, $3.tipo, yylineno);
 					if( table_find(ts, const_entry) < 0 )
@@ -245,27 +131,27 @@ cons: 			NOMCONS IGUAL val_cons PTOCOMA
 						yyerror(msg);
 					}	
 				}
-				;
+			;
 
-val_cons: 		VERD 	{ $$.tipo = BOOLEAN; }
-				|FALSO 	{ $$.tipo = BOOLEAN; }
-				|NUM; 	{ $$.tipo = INTEGER; }
+val_cons:	VERD 		{ $$.tipo = BOOLEAN; }
+			|FALSO 		{ $$.tipo = BOOLEAN; }
+			|NUM 		{ $$.tipo = INTEGER; }
 
 
 //*************************************************************
 //*************************************************************
 //Definicion de tipos
-def_tipos: 		TIPO nombress
-				;
+def_tipos: 	TIPO nombress
+			;
 
-nombress: 		nombress def_tipo
-				|def_tipo
-				;
+nombress: 	nombress def_tipo
+			|def_tipo
+			;
 
-def_tipo: 		NOM IGUAL tipo PTOCOMA
+def_tipo: 	NOM IGUAL tipo PTOCOMA
 				{
 					table_entry alias = table_entry_new_type_alias($1.lexema, $3.tipo, yylineno);
-					int index_alias = table_find(ts, alias);
+					int index_alias = table_find(ts, alias);					
 					if( index_alias < 0)
 					{
 						if( table_entry_is_basic_data_type(data_type_name($3.tipo)))
@@ -274,8 +160,7 @@ def_tipo: 		NOM IGUAL tipo PTOCOMA
 						}
 						else
 						{
-							sprintf(msg, "Type '%s' can not be an alias of '%s' since '%s' is not a base type", 
-								alias.name, $3.lexema, $3.lexema);
+							sprintf(msg, "Type '%s' can not be an alias of '%s' since '%s' is not a base type", alias.name, $3.lexema, $3.lexema);
 							yyerror(msg);	
 						}
 
@@ -287,31 +172,30 @@ def_tipo: 		NOM IGUAL tipo PTOCOMA
 						yyerror(msg);
 					}
 				}
-				;
+			;
 
-tipo: 			ENT 	{ $$.tipo = INTEGER;  } 
-				|DREAL 	{ $$.tipo = REAL; 	  } 
-				|BOOL 	{ $$.tipo = BOOLEAN;  } 
-				|CAD 	{ $$.tipo = STRING;   } 
-				|CHAR 	{ $$.tipo = CHARACTER;} 
-				|LISTA 	{ $$.tipo = LIST; 	  }
-				|NOM	{ $$.tipo = ALIAS;	  }   
+tipo: 			ENT 	 { $$.tipo = INTEGER;  } 
+				|DREAL 	 { $$.tipo = REAL; } 
+				|BOOL 	 { $$.tipo = BOOLEAN;  } 
+				|CAD 	 { $$.tipo = STRING;   } 
+				|CHAR 	 { $$.tipo = CHARACTER;} 
+				|LISTA 	 { $$.tipo = LIST; }
+				|NOM	 { $$.tipo = ALIAS; $$.lexema = strdup($1.lexema); }   
 				;
 
 
 //*************************************************************
 //*************************************************************
 //Definición de Variables
-vars: 			VAR decl_vars
-				;
+vars: 		VAR decl_vars
+			;
 
-decl_vars: 		 decl_vars decl_var PTOCOMA 
-				|decl_var PTOCOMA
-				;
+decl_vars: 	 decl_vars decl_var PTOCOMA 
+			|decl_var PTOCOMA
+			;
 
-decl_var: 		nombre_dv PTOS tipo 
+decl_var: 	nombre_dv PTOS tipo 
 				{ 
-
 					if(table_entry_is_basic_data_type(data_type_name($3.tipo)))
 					{
 						table_update_unassigned_types(ts, $3.tipo); 	
@@ -324,14 +208,12 @@ decl_var: 		nombre_dv PTOS tipo
 							sprintf(msg, "'%s' is not a valid data type", $3.lexema);
 							yyerror(msg);
 						}
-					}
-
-					
+					}				
 				}
-				;
-nombre_dv: 		nombre_dv COMA NOM 	{ push_to_table(table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));	}
-				|NOM 				{ push_to_table(table_entry_new_variable($1.lexema, UNASSIGNED, yylineno));	}
-				;
+			;
+nombre_dv: 	nombre_dv COMA NOM 	{ push_to_table(ts, table_entry_new_variable($3.lexema, UNASSIGNED, yylineno));	}
+			|NOM 				{ push_to_table(ts, table_entry_new_variable($1.lexema, UNASSIGNED, yylineno));	}
+			;
 
 
 //*************************************************************
@@ -341,103 +223,104 @@ nombre_dv: 		nombre_dv COMA NOM 	{ push_to_table(table_entry_new_variable($3.lex
 funcs:			funcs func
 				|func
 				;
-
+	
 func:			func_header func_content
 				|func_header func_dec func_content
 				;
 
-func_dec:		vars func_nested
+func_dec:		vars funcs_nested
 				|vars
-				|func_nested
+				|VAR funcs_nested
 				;
 
-func_nested: 	func
-				|func_nested
+funcs_nested: 	funcs_nested func
+				|func
 				;
 
 func_header: 	FUNC NOM PIZ params PDE PTOS tipo COMA
-				{ 
-					int i = $4.entero;  
-					table tsf1 = table_new(), tsf2 = table_new();
-					while((i--) > 0)  
-					{
-						table_entry e = table_pop(ts);
-						table_push(tsf1, e);
-						table_push(tsf2, e);
-					}
+					{ 
+						int i = $4.entero;  
+						table tsf1 = table_new(), tsf2 = table_new();
+						while((i--) > 0)  
+						{
+							table_entry e = table_pop(ts);
+							table_push(tsf1, e);
+							table_push(tsf2, e);
+						}
 
-					push_to_table(table_entry_new_function($2.lexema, $4.entero, $7.tipo, yylineno));	
+						push_to_table(ts, table_entry_new_function($2.lexema, $4.entero, $7.tipo, yylineno));	
 
-					// push the function parameters again 
-					while(!table_empty(tsf1)) table_push(ts, table_pop(tsf1));
-					
-					table_push(ts, table_entry_new_mark(yylineno)); 
+						// push the function parameters again 
+						while(!table_empty(tsf1)) 
+							table_push(ts, table_pop(tsf1));
+						
+						table_push(ts, table_entry_new_mark(yylineno)); 
 
-					// In case we don't want to allow variables called like the function within the function scope or 
-					// nested functions named in the same way, uncomment this line.
-					// We would then allow recursive calls to the function from the inside.
-					// table_push(ts, table_entry_new_function($2.lexema, $4.entero, $7.tipo, yylineno));
+						// In case we don't want to allow variables called like the function within the function scope or 
+						// nested functions named in the same way, uncomment this line.
+						// We would then allow recursive calls to the function from the inside.
+						table_push(ts, table_entry_new_function($2.lexema, $4.entero, $7.tipo, yylineno));
 
-					// the function params are entered in the table as variables
-					while(!table_empty(tsf2))
-					{
-						// we don't do any checks here since we check for it while adding the parameters
-						table_push(ts, table_entry_as_variable(table_pop(tsf2)) ); 
-					}
-					table_destroy(&tsf1);
-					table_destroy(&tsf2);							
-				}
+						// the function params are entered in the table as variables
+						while(!table_empty(tsf2))
+						{
+							// we don't do any checks here since we check for it while adding the parameters
+							table_push(ts, table_entry_as_variable(table_pop(tsf2)) ); 
+						}
+						table_destroy(&tsf1);
+						table_destroy(&tsf2);							
+						
+						#ifdef DISPLAY_TABLE_FUNCTION_SCOPE
+							table_display(ts);
+						#endif
+					}				
 				|FUNC NOM PTOS tipo
-				{
-					push_to_table(table_entry_new_function($2.lexema, 0, $4.tipo, yylineno));
-					table_push(ts, table_entry_new_mark(yylineno));
-				}
+					{
+						push_to_table(ts, table_entry_new_function($2.lexema, 0, $4.tipo, yylineno));
+						table_push(ts, table_entry_new_mark(yylineno));
+						#ifdef DISPLAY_TABLE_FUNCTION_SCOPE
+							table_display(ts);
+						#endif
+					}
 				;
 
-func_content: 	INIC sents FIN PTOCOMA 
-				{
-					table_pop_scope(ts);
-				}
-				|INIC FIN PTOCOMA 
-				{	
-					table_pop_scope(ts);
-				}
+func_content: 	INIC sents FIN PTOCOMA  { table_pop_scope(ts); }
+				|INIC FIN PTOCOMA 		{ table_pop_scope(ts);}
 				;
 
 sents: 			sents sent PTOCOMA
 				|sent PTOCOMA
 				;
 
-params:			params COMA param 
-				{ 
-					$$.entero = $1.entero + 1; 
-				} 
-				|param 				
-				{ 
-					$$.entero = 1; 
-				}
+params:			params COMA param  	{ $$.entero = $1.entero + 1; } 
+				|param 				{ $$.entero = 1; }
 				;
 
 param: 			NOM PTOS tipo 
-				{ 
-					push_to_table(table_entry_new_parameter($1.lexema, $3.tipo, yylineno)); 
+				{ 			
+					table_entry new_param = table_entry_new_parameter($1.lexema, $3.tipo, yylineno);
+					if(new_param.data_type == ALIAS)
+					{
+						
+						sprintf(msg, "'%s'  is not a valid data type", $3.lexema);
+						yyerror(msg);
+					}
+					else{
+						push_to_table(ts, new_param); 	
+					}
+					
 				}
 				;
 
-/* He añadido soporte para una zona de declaracion de variables despues de la cabecera 
-	func_header 
-	func_content
-*/
-
-
 //*************************************************************
 //*************************************************************
-//Definición de cuerpo
+//Definición de cuerpo y tipos de sentencia
+
 cuerpo: 		INIC FIN PTO
 				|INIC sents FIN PTO
 				;
 
-sent: 			asignacion
+sent:	 		asignacion
 				|entrada
 				|salida
 				|expr
@@ -447,12 +330,25 @@ sent: 			asignacion
 				|condicion
 				;
 
-asignacion: 	NOM ASIG expr
+asignacion: 	NOM ASIG expr 
 				{
-					table_entry entry = table_find_by_name(ts, $1.lexema);
+					table_entry entry = table_find_by_name(ts, $1.lexema);					
 					if(table_entry_valid(entry))
-					{
-						$$.tipo = check_data_types_operation(entry.data_type, $3.tipo);
+					{											
+						if($3.tipo == entry.data_type)
+						{
+							$$.tipo = $3.tipo;
+						}
+						else if(($3.tipo == REAL || entry.data_type == REAL) && ($3.tipo == INTEGER || entry.data_type == INTEGER))
+						{
+							$$.tipo = REAL;
+						}
+						else
+						{							
+							$$.tipo = UNKNOWN;
+							sprintf(msg, "Incompatible types in assignment statement of '%s'", $1.lexema);
+							yyerror(msg);
+						}					    	
 					}
 					else 
 					{
@@ -463,175 +359,64 @@ asignacion: 	NOM ASIG expr
 				}
 				;
 
-entrada: 		LEE NOM
-				;
+//*************************************************************
+//*************************************************************
+// Entrada y salida 
+entrada: 	LEE NOM
+			;
 
-salida: 		ESC PIZ e_salidas PDE
-				;
+salida: 	ESC PIZ e_salidas PDE
+			;
 
-e_salidas: 		e_salidas COMA e_salida 
-				|e_salida
-				;
+e_salidas: 	e_salidas COMA e_salida 
+			|e_salida
+			;
 
-e_salida: 		CADTEXTO		
-				|expr 
-				;
+e_salida: 	CADTEXTO		
+			|expr 
+			;
 
-expr :	 		 expr SUM expr 	 
-				{ 
-					if($1.tipo == LIST)
-					{
-						$$.tipo = $1.tipo;
-						if($3.tipo != LIST)
-						{
-							$$.tipo = UNKNOWN;
-							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
-							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
-								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
-							yyerror(msg);
-						}
-					}
-					else
-					{
-						type_data at[2] = {INTEGER, REAL}; 
-						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo);
-					}   
-				}
-				|expr REST expr  
-				{ 
-					if($1.tipo == LIST)
-					{
-						$$.tipo = $1.tipo;
-						if($3.tipo != LIST)
-						{
-							$$.tipo = UNKNOWN;
-							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
-							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
-								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
-							yyerror(msg);
-						}
-					}
-					else
-					{
-						type_data at[2] = {INTEGER, REAL}; 
-						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo);
-					}     
-				}
+//*************************************************************
+//*************************************************************
+// EXPRESIONES				
+expr :	 	PIZ expr PDE { $$.tipo = $2.tipo; }
 
-				|expr MULT expr  { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo); }
-				|expr DIV expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, $1.tipo); }
+//*************************
+// operaciones aritmeticas		
+			|expr SUM expr 	 { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "SUM"); 	}		
+			|expr REST expr  { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "RESTA"); }		
+			|expr MULT expr  { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "MULT"); 	}
+			|expr DIV expr 	 { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "DIV"); 	}
 
-				|expr Y expr 	 
-				{ 
-					if($1.tipo == $3.tipo == BOOLEAN) 
-					{
-						$$.tipo = BOOLEAN; 
-					}
-					else 
-					{ 
-						$$.tipo = UNKNOWN; 
-						type_data d = $1.tipo != BOOLEAN ? $1.tipo : $3.tipo;
-						sprintf(msg,"In 'Y' expression, both operands expected to be %s. Got: %s", 
-							data_type_name(BOOLEAN), data_type_name(BOOLEAN), data_type_name(d)); 
-						yyerror(msg); 					
-					}  
-				}
-				|expr O expr
-				{ 
-					if($1.tipo == $3.tipo == BOOLEAN) 
-					{
-						$$.tipo = BOOLEAN; 
-					}
-					else 
-					{ 
-						$$.tipo = UNKNOWN; 
-						type_data d = $1.tipo != BOOLEAN ? $1.tipo : $3.tipo;
-						sprintf(msg,"In 'O' expression, both operands expected to be %s. Got: %s", 
-							data_type_name(BOOLEAN), data_type_name(BOOLEAN), data_type_name(d)); 
-						yyerror(msg);
-					}  
-				}
-				|get_item_lista		  	{ $$.tipo = $1.tipo; }
-				|add_item_lista		  	{ $$.tipo = $1.tipo; }
-				|inclusion_item_lista 	{ $$.tipo = $1.tipo; }
-				|esta_vacia_lista		{ $$.tipo = $1.tipo; }
-				|expr MAYIG expr { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);} 
-				|expr MENIG expr { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);}
-				|expr MAY expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);} 	 
-				|expr MEN expr 	 { type_data at[2] = {INTEGER, REAL}; $$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);}
-				|expr DIST expr  
-				{ 
-					if($1.tipo == LIST)
-					{
-						$$.tipo = BOOLEAN;
-						if($3.tipo != LIST)
-						{
-							$$.tipo = UNKNOWN;
-							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
-							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
-								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
-							yyerror(msg);
-						}
-					}
-					else
-					{
-						type_data at[2] = {INTEGER, REAL}; 
-						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);
-					} 
-				}
-				|expr IGUAL expr 
-				{ 
-					if($1.tipo != LIST)
-					{
-						type_data at[2] = {INTEGER, REAL}; 
-						$$.tipo = check_data_types($1.tipo, $3.tipo, at, 2, BOOLEAN);
-					}
-					else
-					{
-						$$.tipo = BOOLEAN;
-						if($3.tipo != LIST)
-						{
-							$$.tipo = UNKNOWN;
-							sprintf(msg, "%s", $1.tipo == LIST ? $3.lexema : $1.lexema );
-							sprintf(msg, "%s Expected: %s Got: %s",msg, data_type_name(LIST), 
-								data_type_name($1.tipo == LIST ? $3.tipo : $1.tipo));
-							yyerror(msg);
-						}
-					}  
-				}
-				
-				|REST expr %prec UMENOS 
-				{ 
-					type_data at[2] = {INTEGER, REAL}; 
-					$$.tipo = check_data_types($2.tipo, $2.tipo, at, 2, $2.tipo);
-				}
+//*************************
+// operaciones aritmeticas unitarias
+			|REST expr %prec UMENOS { $$.tipo = check_aritmetic_unitary_operation($2.tipo, "-"); }													
+			|SUM expr %prec UMAS 	{ $$.tipo = check_aritmetic_unitary_operation($2.tipo, "+"); }
 
-				|SUM expr %prec UMAS 	
-				{ 
-					type_data at[2] = {INTEGER, REAL}; 
-					$$.tipo = check_data_types($2.tipo, $2.tipo, at, 2, $2.tipo);
-				}
-				
-				|NO expr 		
-				{ 
-					if($1.tipo == BOOLEAN)
-					{
-						$$.tipo = BOOLEAN; 
-					}
-					else 
-					{ 
-						$$.tipo = UNKNOWN; 
-						sprintf(msg, "Expected: %s Got: %s", data_type_name(BOOLEAN), data_type_name($1.tipo)); 
-						yyerror(msg);
-					}  
-				}
-				
-				|VERD				  	{ $$.tipo = BOOLEAN; }
-				|FALSO				  	{ $$.tipo = BOOLEAN; }
-				|llamada_funcion		{ $$.tipo = $1.tipo; }
-				|PIZ expr PDE 			{ $$.tipo = $2.tipo; }
-				|NUM					{ $$.tipo = INTEGER; }
-				|NOMCONS				
+//*************************
+// operaciones relacionales		
+			|expr MAYIG expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MAYIG"); } 			
+			|expr MENIG expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MENIG"); } 				
+			|expr MAY expr 	 { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MAY");   } 
+			|expr MEN expr 	 { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MEN");	}  
+			|expr DIST expr  { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "DIST");  }				
+			|expr IGUAL expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "IGUAL"); }
+
+//*************************
+// operaciones logicas
+			|expr Y expr 	{ $$.tipo = check_logic_operation($1.tipo, $3.tipo, "Y"); }
+			|expr O expr 	{ $$.tipo = check_logic_operation($1.tipo, $3.tipo, "O"); }
+			|NO expr 		{ $$.tipo = check_logic_operation($2.tipo, BOOLEAN, "NO");}
+
+//*************************
+// misc
+			|llamada_funcion	{ $$.tipo = $1.tipo; }
+			|VERD			  	{ $$.tipo = BOOLEAN; }
+			|FALSO				{ $$.tipo = BOOLEAN; }			
+			|NUM				{ $$.tipo = INTEGER; }
+			|NUMREAL			{ $$.tipo = REAL; }
+			|CAR				{ $$.tipo = CHARACTER; }
+			|NOMCONS				
 				{ 
 					table_entry const_entry = table_entry_new_constant($1.lexema, CONSTANT, 0);
 					int index_const = table_find(ts, const_entry);
@@ -646,82 +431,94 @@ expr :	 		 expr SUM expr
 						$$.tipo = table_get(ts, index_const).data_type;
 					}	 
 				}
-				|busca_c 
-				|extrae_c
-				|concat_c
-				|long_c
-				; 
 
+//*************************
+// lista
+			|get_item_lista		  	{ $$.tipo = $1.tipo; }
+			|add_item_lista		  	{ $$.tipo = $1.tipo; }
+			|inclusion_item_lista 	{ $$.tipo = $1.tipo; }
+			|esta_vacia_lista		{ $$.tipo = $1.tipo; }
+
+//*************************
+// cadena
+			|busca_c 
+			|extrae_c
+			|concat_c
+			|long_c
+			; 
+
+// ******************************************************
+// ******************************************************
+// Llamada de funcion				
 llamada_funcion: NOM PIZ exprs PDE
-				{
-					table_entry entry = table_find_by_name(ts, $1.lexema);
-					table_entry fentry = table_entry_new_function($1.lexema, $3.entero, entry.data_type, 0);
-					$$.tipo = check_function_entries(entry, fentry);
-
-				}
+					{													
+						table_entry function_declaration = table_find_by_name_unscoped(ts, $1.lexema);											
+						table_entry function_call = table_entry_new_function($1.lexema, $3.entero, function_declaration.data_type, 0);
+						$$.tipo = check_function_entries(function_declaration, function_call, ts, ts_parameters);
+						table_reset(&ts_parameters);
+					}
+				|NOM PIZ PDE
+					{												
+						table_entry function_declaration = table_find_by_name_unscoped(ts, $1.lexema);											
+						table_entry function_call = table_entry_new_function($1.lexema, 0, function_declaration.data_type, 0);
+						$$.tipo = check_function_entries(function_declaration, function_call, ts, ts_parameters);
+						table_reset(&ts_parameters);
+					}
 				|NOM
-				{
-
-					table_entry entry = table_find_by_name(ts, $1.lexema);
-					
-					if(table_entry_valid(entry))
-					{
-						if(entry.entry_type == FUNCTION)
+					{											
+						table_entry entry = table_find_by_name_unscoped_not_parameter(ts, $1.lexema);
+						if(table_entry_valid(entry))
 						{
-							table_entry fentry = table_entry_new_function($1.lexema, 0, entry.data_type, 0);
-							$$.tipo = check_function_entries(entry, fentry);
+							if(entry.entry_type == FUNCTION)
+							{
+								table_entry fentry = table_entry_new_function($1.lexema, 0, entry.data_type, 0);
+								$$.tipo = check_function_entries(entry, fentry, ts, ts_parameters);
+								table_reset(&ts_parameters);
+							}
+							else
+							{
+								$$.tipo = entry.data_type;
+							}
 						}
 						else
 						{
-							$$.tipo = entry.data_type;
+							sprintf(msg,"Undeclared '%s'", $1.lexema);
+							yyerror(msg);
+							$$.tipo = UNKNOWN;
 						}
-					}
-					else
-					{
-						sprintf(msg,"Undefined reference to function '%s'", $1.lexema);
-						yyerror(msg);
-						$$.tipo = UNKNOWN;
-					}
-				}	
+					}	
 				;
 
-exprs: 			exprs COMA expr
-				{
-					$$.entero = $1.entero + 1;
-					table_push(ts_parameters, table_entry_new_parameter($3.lexema, $3.tipo, yylineno));
-				}
-				|expr 
-				{
-					$$.entero = 1;
-					table_push(ts_parameters, table_entry_new_parameter($1.lexema, $1.tipo, yylineno));
-				}
+exprs: 			exprs COMA expr { $$.entero = $1.entero + 1; table_push(ts_parameters, table_entry_new_parameter($3.lexema, $3.tipo, yylineno)); }
+				|expr 			{ $$.entero = 1; table_push(ts_parameters, table_entry_new_parameter($1.lexema, $1.tipo, yylineno)); }
 				;
 
 //*************************************************************
 //*************************************************************
 //Bucle REPEAT UNTIL
 bucle: 			REPIT sents HASTA expr 
-				{
-					$$.tipo = $4.tipo;
-					if($4.tipo != BOOLEAN)
 					{
-						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: %s", 
-							data_type_name(BOOLEAN), data_type_name($4.tipo));
-						yyerror(msg);
-					}	
-				}
-				|REPIT HASTA expr
-				{
-					$$.tipo = $3.tipo;
-					if($3.tipo != BOOLEAN)
-					{
-						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'REPITE' declaration. Expected: %s Got: %s", 
-							data_type_name(BOOLEAN), data_type_name($3.tipo));
-						yyerror(msg);
+						$$.tipo = $4.tipo;
+						if($4.tipo != BOOLEAN)
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg,"In 'REPITE' declaration. Expected: %s", 
+								data_type_name(BOOLEAN), data_type_name($4.tipo));
+							yyerror(msg);
+						}	
 					}
-				}
+
+				|REPIT HASTA expr
+					{
+						$$.tipo = $3.tipo;
+						if($3.tipo != BOOLEAN)
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg,"In 'REPITE' declaration. Expected: %s", 
+								data_type_name(BOOLEAN), data_type_name($3.tipo));
+							yyerror(msg);
+						}
+					}
 				;
 
 
@@ -729,27 +526,28 @@ bucle: 			REPIT sents HASTA expr
 //*************************************************************
 //Sentencia condicional
 condicion: 		SI expr ENTONC bloque_c 
-				{
-					$$.tipo = $2.tipo;
-					if($2.tipo != BOOLEAN )
 					{
-						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s", 
-							data_type_name(BOOLEAN), data_type_name($2.tipo));
-						yyerror(msg);
+						$$.tipo = $2.tipo;
+						if($2.tipo != BOOLEAN )
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg,"In 'SI' declaration. Expected: %s", 
+								data_type_name(BOOLEAN), data_type_name($2.tipo));
+							yyerror(msg);
+						}
 					}
-				}
+
 				|SI expr ENTONC bloque_c SINO bloque_c 
-				{
-					$$.tipo = $2.tipo;
-					if( $2.tipo != BOOLEAN )
 					{
-						$$.tipo = UNKNOWN;
-						sprintf(msg,"In 'SI' declaration. Expected: %s Got: %s", 
-							data_type_name(BOOLEAN), data_type_name($2.tipo));
-						yyerror(msg);
+						$$.tipo = $2.tipo;
+						if( $2.tipo != BOOLEAN )
+						{
+							$$.tipo = UNKNOWN;
+							sprintf(msg,"In 'SI' declaration. Expected: %s", 
+								data_type_name(BOOLEAN), data_type_name($2.tipo));
+							yyerror(msg);
+						}
 					}
-				}
 				;
 
 bloque_c: 		sent
@@ -763,77 +561,77 @@ bloque_c: 		sent
 
 //Recupera un elemento de la lista: variable_lista[entero_indice]
 get_item_lista: 		expr BRACKIZ expr BRACKDE
-						{
-							$$.tipo = INTEGER;
-							if($1.tipo != LIST)
 							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list operand []. Expected: %s Got: %s", 
-									data_type_name(LIST), data_type_name($1.tipo));
-								yyerror(msg);
+								$$.tipo = INTEGER;
+								if($1.tipo != LIST)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list operand []. Expected: %s", 
+										data_type_name(LIST), data_type_name($1.tipo));
+									yyerror(msg);
+								}
+								if($3.tipo != INTEGER)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list operand [] wrong index type. Expected: %s", 
+										data_type_name(INTEGER), data_type_name($3.tipo));
+									yyerror(msg);		
+								}		
 							}
-							if($3.tipo != INTEGER)
-							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list operand [] wrong index type. Expected: %s Got: %s", 
-									data_type_name(INTEGER), data_type_name($3.tipo));
-								yyerror(msg);		
-							}		
-						}
 						;
 
 //Añadir un elemento a la lista: variable_lista << elemento
 add_item_lista: 		expr DMEN expr
-						{
-							$$.tipo = LIST;
-							if($1.tipo != LIST)
 							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list << operand. Expected: %s Got: %s", 
-									data_type_name(LIST), data_type_name($1.tipo));
-								yyerror(msg);
+								$$.tipo = LIST;
+								if($1.tipo != LIST)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list << operand. Expected: %s", 
+										data_type_name(LIST), data_type_name($1.tipo));
+									yyerror(msg);
+								}
+								if($3.tipo != INTEGER && $3.tipo != LIST)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list << second operand. Expected: %s, %s", 
+										data_type_name(INTEGER), data_type_name(LIST), data_type_name($3.tipo));
+									yyerror(msg);
+								}
 							}
-							if($3.tipo != INTEGER && $3.tipo != LIST)
-							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list << second operand. Expected: %s, %s Got: %s", 
-									data_type_name(INTEGER), data_type_name(LIST), data_type_name($3.tipo));
-								yyerror(msg);
-							}
-						}
 						;
 
 //Inclusion en lista: variable_lista?variable_elemento
 inclusion_item_lista: 	expr QMARK PIZ expr PDE
-						{
-							$$.tipo = BOOLEAN;
-							if($1.tipo != LIST)
 							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list operand ? (inclusion). Expected: %s Got: %s", 
-									data_type_name(LIST), data_type_name($1.tipo));
-								yyerror(msg);
+								$$.tipo = BOOLEAN;
+								if($1.tipo != LIST)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list operand ? (inclusion). Expected: %s", 
+										data_type_name(LIST), data_type_name($1.tipo));
+									yyerror(msg);
+								}
+								if($4.tipo != INTEGER)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list ? (inclusion) second operand. Expected: %s", 
+										data_type_name(INTEGER), data_type_name($4.tipo));
+									yyerror(msg);
+								}
 							}
-							if($4.tipo != INTEGER)
-							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list ? (inclusion) second operand. Expected: %s Got: %s", 
-									data_type_name(INTEGER), data_type_name($4.tipo));
-								yyerror(msg);
-							}
-						}
 
 esta_vacia_lista: 		expr QMARK
-						{
-							$$.tipo = BOOLEAN;
-							if($1.tipo != LIST)
 							{
-								$$.tipo = UNKNOWN;
-								sprintf(msg, "In list operand ? (empty list?) Expected: %s Got: %s", 
-									data_type_name(LIST), data_type_name($1.tipo));
-								yyerror(msg);
+								$$.tipo = BOOLEAN;
+								if($1.tipo != LIST)
+								{
+									$$.tipo = UNKNOWN;
+									sprintf(msg, "In list operand ? (empty list?) Expected: %s", 
+										data_type_name(LIST), data_type_name($1.tipo));
+									yyerror(msg);
+								}
 							}
-						}
 
 //*************************************************************
 //*************************************************************
