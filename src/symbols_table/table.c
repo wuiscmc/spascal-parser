@@ -77,10 +77,43 @@ table_entry table_find_by_name(table t, char* name)
     int i = t->size-1, index = -1;
     table_entry e = table_entry_new();
     
-    while(t->entries[i].entry_type != MARK){
-        if(strcmp(t->entries[i].name, name) == 0)
+    while(t->entries[i].entry_type != MARK)
+    {        
+        if(strcmp(t->entries[i].name, name) == 0 ) 
         {
-            e = t->entries[i];
+            e = t->entries[i];            
+            break;
+        }
+        i--;
+    }  
+    return e; 
+}
+
+table_entry table_find_by_name_unscoped(table t, char* name)
+{
+    int i = t->size-1, index = -1;
+    table_entry e = table_entry_new();
+    while(i>0)
+    {        
+        if(strcmp(t->entries[i].name, name) == 0 ) 
+        {
+            e = t->entries[i];            
+            break;
+        }
+        i--;
+    }  
+    return e; 
+}
+
+table_entry table_find_by_name_unscoped_not_parameter(table t, char* name)
+{
+    int i = t->size-1, index = -1;
+    table_entry e = table_entry_new();
+    while(i>0)
+    {        
+        if(strcmp(t->entries[i].name, name) == 0 && t->entries[i].entry_type != PARAMETER ) 
+        {
+            e = t->entries[i];            
             break;
         }
         i--;
@@ -134,14 +167,15 @@ void table_pop_scope(table t)
 }
 
 
-void table_reset(table t)
+void table_reset(table *t)
 {
-    table_destroy(&t);
-    t = table_new();
+    table_destroy(t);
+    *t = table_new();
 }
 
 void table_destroy(table *t)
 {
+    (*t)->size = 0;    
     free(*t);
     t = NULL;
 }

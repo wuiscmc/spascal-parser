@@ -1,55 +1,93 @@
-programa doomstest; 
-{practica PDL2}
+{
+	Autor: Luis Carlos Mateos
+	Programa: Doomtest
+	Descripcion: 
+		Programa de prueba del analizador semantico para lenguajes 
+		basados en Pascal en spa 
+}
+programa programaTestAnalizadorSemantico;
 
+{ **************************************************************************************************************** }
+{ **************************************************************************************************************** }
+{ Defincion de constantes }
 const
-	PDL=2123123;
-	AC=VERDADERO;
-	BC=FALSO;
+	LONGINT = 2123123;
+	TRUEBOOL = VERDADERO;
+	FALSEBOOL = FALSO;
 
-tipo 
-	eso = lista;
+{ **************************************************************************************************************** }
+{ **************************************************************************************************************** }
+{ Definicion de tipos }
+tipo  
+	listaEnlazada = lista;	
 
-funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero,
-var
-	a, b: real;
-	funcion multiplica (num1: entero, f1num1: caracter, f1: real): entero,
-	var 
+{ **************************************************************************************************************** }
+{ **************************************************************************************************************** }
+{ Definicion de funciones }
+{
+
+	 
+	funcion multiplica (numParam: entero): entero,
+	var
+		realVar, realVar2 : real;	
+		c: caracter;
+		funcion m1: entero			
+			inicio		
+			fin;
+
+	
+		funcion m2: entero			
+			var 			
+				a: caracter; b:caracter; c:lista;
+				funcion m31(e:booleano): entero,
+				inicio			
+					m31(verdadero = falso);		
+				fin;
+			inicio				
+			fin;
 		
-		a: eso;
-		b:real;
+}	
+		funcion m3(e: booleano): entero,			
+			var 		
+				s: lista;				
+				funcion m31(s: entero, m: real, n: caracter): entero,
+				var 
+					x: caracter;
+				inicio				
+					m31(s, m, n);
+				fin;		
+			inicio			
+				m31(s, 1.1, 'c');
+			fin;	
+
+{
 	inicio
-		BC;
-		si AC entonces
-			si a entonces
-				PDL + a
-		;
+
 	fin;
-				
-inicio
-	BC;
-	AC;
-fin;
+}
 
+{ **************************************************************************************************************** }
+{ **************************************************************************************************************** }
+{ MAIN }
 var 
-	a, b, num1 : real;
-	num2: entero;
-	c : caracter;
-	pdl: eso;
-	pdl2: lista;
-inicio
+	realMainVar : real;
+	entMainVar, entMainVar2, entMainVar3: entero;
+	carMainVar : caracter;
+	linkedListMainVar: listaEnlazada;
+	listMainVar: lista;
+inicio	
+
 	repite
-		si AC entonces
-			si PDL = 2 entonces
-				PDL
-		;
-		PDL + a;
-		multiplica(1,c,a);
-	hasta pdl > VERDADERO;
+		si TRUEBOOL entonces
+			si LONGINT = 2 entonces
+				1;{hola();}
 
-	PDL + pdl2;
-	pdl?(c);
-	pdl2?(c);
-	pdl2<<c;
-	b + PDL;
-
+		LONGINT + realMainVar;
+	hasta (( (2+1+4+6) < 1) = TRUEBOOL) ;
+	
+		
+	listMainVar = listMainVar;
+	(listMainVar?(entMainVar) = TRUEBOOL) Y (linkedListMainVar?(entMainVar) <> FALSEBOOL);
+	linkedListMainVar << (entMainVar + 1 - LONGINT);
+	realMainVar + LONGINT;			
 fin.
