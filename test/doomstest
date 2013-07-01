@@ -11,7 +11,9 @@ programa programaTestAnalizadorSemantico;
 { **************************************************************************************************************** }
 { Defincion de constantes }
 const
-	LONGINT = 2123123;
+	CONSTINT = 2123123;
+	CONSTREAL = 10.1;
+	CONSTCAR = 'C';
 	TRUEBOOL = VERDADERO;
 	FALSEBOOL = FALSO;
 
@@ -24,9 +26,8 @@ tipo
 { **************************************************************************************************************** }
 { **************************************************************************************************************** }
 { Definicion de funciones }
-{
 
-	 
+
 	funcion multiplica (numParam: entero): entero,
 	var
 		realVar, realVar2 : real;	
@@ -46,7 +47,7 @@ tipo
 			inicio				
 			fin;
 		
-}	
+
 		funcion m3(e: booleano): entero,			
 			var 		
 				s: lista;				
@@ -54,17 +55,19 @@ tipo
 				var 
 					x: caracter;
 				inicio				
+					{no debe dar error puesto que 's' hace referencia a un entero}
 					m31(s, m, n);
 				fin;		
 			inicio			
-				m31(s, 1.1, 'c');
+				{debe dar error puesto que 's' hace referencia a lista}
+				m31(s, 1.1, 'c'); 
 			fin;	
 
-{
+
 	inicio
 
 	fin;
-}
+
 
 { **************************************************************************************************************** }
 { **************************************************************************************************************** }
@@ -79,15 +82,15 @@ inicio
 
 	repite
 		si TRUEBOOL entonces
-			si LONGINT = 2 entonces
+			si CONSTINT = 2 entonces
 				1;{hola();}
 
-		LONGINT + realMainVar;
+		CONSTINT + realMainVar;
 	hasta (( (2+1+4+6) < 1) = TRUEBOOL) ;
 	
-		
+	realMainVar := multiplica(3);	
 	listMainVar = listMainVar;
 	(listMainVar?(entMainVar) = TRUEBOOL) Y (linkedListMainVar?(entMainVar) <> FALSEBOOL);
-	linkedListMainVar << (entMainVar + 1 - LONGINT);
-	realMainVar + LONGINT;			
+	linkedListMainVar << (entMainVar + 1 - CONSTINT);
+	realMainVar + CONSTINT;			
 fin.

@@ -208,8 +208,8 @@ int check_function_call_type_parameters(table_entry function_call, table_entry f
 	for(i = number_of_params; i >= 1; i--)
 	{
 		param_index = index + i;
-		declaration_parameter = table_get(ts, param_index); // the param from the declaration (in symbols table)
-		call_parameter = table_pop(ts_parameters); // inverse order 
+		declaration_parameter = table_get(ts, param_index); // the param from the declaration (symbols table)
+		call_parameter = table_pop(ts_parameters); 
 
 		if(!table_entry_compatible_data_type(declaration_parameter.data_type, call_parameter.data_type))		
 		{
@@ -220,8 +220,7 @@ int check_function_call_type_parameters(table_entry function_call, table_entry f
 		}
 	}
 
-	return types_are_compatible;
-	
+	return types_are_compatible;	
 }
 
 /**

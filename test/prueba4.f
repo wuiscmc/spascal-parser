@@ -1,12 +1,17 @@
 Programa prueba4; {operaciones cadena}
 
+Tipo 
+
+linaresType = cadena;
+
+
 Var  
 
 cad1,cad2:cadena; 
 l1:entero; 
 l2:entero;
 j:booleano;
-
+linares:linaresType;
 Inicio
 
 Escribe('**Operaciones con cadenas**');

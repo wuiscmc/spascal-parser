@@ -30,7 +30,7 @@ que se muestre dicho número de línea */
 void yyerror (char *msg)
 {
 	fprintf(stderr, "\n");
-	fprintf(stderr,"Linea %d => ",yylineno,"\n");
+	fprintf(stderr,"Line %d => ",yylineno,"\n");
 	fprintf(stderr,msg);
 }
 
@@ -51,19 +51,20 @@ gramática (axioma). Byacc se encarga de asociar a cada uno un código */
 %token SI SINO ENTONC
 
 // raw types 
-%token NUM  NUMREAL NOM NOMCONS CADTEXTO CAD CAR
+%token NUMREAL NOM NOMCONS CADTEXTO CAD CAR
 %token FALSO VERD
 
 // types
 %token LONG DREAL BOOL CHAR ENT
 
 //Precedencia de operaciones
-%left 	SUM REST
-%left 	MULT DIV
-%left 	IGUAL DIST MAY MAYIG MEN MENIG
-%left 	Y O
-%left 	NO
-%left 	UMENOS UMAS
+%token NUM	
+%left SUM REST
+%left MULT DIV
+%left Y O 	
+%left IGUAL DIST MAY MAYIG MEN MENIG	
+%left NO	
+%left UMENOS UMAS
 
 //Tokens para el TDA Cadena
 %token INS EXT BUSC BORR
@@ -136,6 +137,9 @@ cons:		NOMCONS IGUAL val_cons PTOCOMA
 val_cons:	VERD 		{ $$.tipo = BOOLEAN; }
 			|FALSO 		{ $$.tipo = BOOLEAN; }
 			|NUM 		{ $$.tipo = INTEGER; }
+			|NUMREAL	{ $$.tipo = REAL; }
+			|CADTEXTO	{ $$.tipo = STRING; }
+			|CAR		{ $$.tipo = CHARACTER; }			
 
 
 //*************************************************************
@@ -178,7 +182,7 @@ tipo: 			ENT 	 { $$.tipo = INTEGER;  }
 				|DREAL 	 { $$.tipo = REAL; } 
 				|BOOL 	 { $$.tipo = BOOLEAN;  } 
 				|CAD 	 { $$.tipo = STRING;   } 
-				|CHAR 	 { $$.tipo = CHARACTER;} 
+				|CHAR 	 { $$.tipo = CHARACTER;} 				
 				|LISTA 	 { $$.tipo = LIST; }
 				|NOM	 { $$.tipo = ALIAS; $$.lexema = strdup($1.lexema); }   
 				;
@@ -382,6 +386,15 @@ e_salida: 	CADTEXTO
 expr :	 	PIZ expr PDE { $$.tipo = $2.tipo; }
 
 //*************************
+// operaciones relacionales		
+			|expr IGUAL expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "IGUAL"); }
+			|expr DIST expr  { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "DIST");  }				
+			|expr MAY expr 	 { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MAY");   } 
+			|expr MAYIG expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MAYIG"); } 			
+			|expr MEN expr 	 { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MEN");	}  
+			|expr MENIG expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MENIG"); } 				
+
+//*************************
 // operaciones aritmeticas		
 			|expr SUM expr 	 { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "SUM"); 	}		
 			|expr REST expr  { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "RESTA"); }		
@@ -389,24 +402,17 @@ expr :	 	PIZ expr PDE { $$.tipo = $2.tipo; }
 			|expr DIV expr 	 { $$.tipo = check_arithmetic_operation($1.tipo, $3.tipo, "DIV"); 	}
 
 //*************************
-// operaciones aritmeticas unitarias
-			|REST expr %prec UMENOS { $$.tipo = check_aritmetic_unitary_operation($2.tipo, "-"); }													
-			|SUM expr %prec UMAS 	{ $$.tipo = check_aritmetic_unitary_operation($2.tipo, "+"); }
-
-//*************************
-// operaciones relacionales		
-			|expr MAYIG expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MAYIG"); } 			
-			|expr MENIG expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MENIG"); } 				
-			|expr MAY expr 	 { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MAY");   } 
-			|expr MEN expr 	 { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "MEN");	}  
-			|expr DIST expr  { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "DIST");  }				
-			|expr IGUAL expr { $$.tipo = check_relational_operation($1.tipo, $3.tipo, "IGUAL"); }
-
-//*************************
 // operaciones logicas
 			|expr Y expr 	{ $$.tipo = check_logic_operation($1.tipo, $3.tipo, "Y"); }
 			|expr O expr 	{ $$.tipo = check_logic_operation($1.tipo, $3.tipo, "O"); }
 			|NO expr 		{ $$.tipo = check_logic_operation($2.tipo, BOOLEAN, "NO");}
+
+//*************************
+// operaciones aritmeticas unitarias
+			|REST expr %prec UMENOS { $$.tipo = check_aritmetic_unitary_operation($2.tipo, "-"); }													
+			|SUM expr %prec UMAS 	{ $$.tipo = check_aritmetic_unitary_operation($2.tipo, "+"); }
+
+
 
 //*************************
 // misc
@@ -416,6 +422,7 @@ expr :	 	PIZ expr PDE { $$.tipo = $2.tipo; }
 			|NUM				{ $$.tipo = INTEGER; }
 			|NUMREAL			{ $$.tipo = REAL; }
 			|CAR				{ $$.tipo = CHARACTER; }
+			|CADTEXTO			{ $$.tipo = STRING; }
 			|NOMCONS				
 				{ 
 					table_entry const_entry = table_entry_new_constant($1.lexema, CONSTANT, 0);
@@ -638,28 +645,34 @@ esta_vacia_lista: 		expr QMARK
 //#####Operaciones asociadas al TDA Cadena
 
 //Inserta una subcadena en una cadena a partir de una posicion  inserta(cadena,subcadena,pos)
-insertar_c: 	INS PIZ param_cadena COMA param_cadena COMA expr PDE;
+insertar_c: 	INS PIZ param_cadena COMA param_cadena COMA expr PDE { $$.tipo = $3.tipo == $5.tipo && $3.tipo == STRING && $7.tipo == INTEGER ? STRING : UNKNOWN; }
+				;
 
 //Borra a partir de una posicion P, N caracteres borra("pepe",2,1);
-borrar_c: 		BORR PIZ param_cadena COMA expr COMA expr PDE;
+borrar_c: 		BORR PIZ param_cadena COMA expr COMA expr PDE { $$.tipo = $3.tipo == STRING && $5.tipo == $7.tipo && $7.tipo == INTEGER ? STRING : UNKNOWN;}
+				;
 
 //Buscar en una cadena, una subcadena
-busca_c: 		BUSC PIZ param_cadena COMA param_cadena PDE;
+busca_c: 		BUSC PIZ param_cadena COMA param_cadena PDE { $$.tipo = $3.tipo == $5.tipo && $5.tipo == STRING ? BOOLEAN : UNKNOWN;}
+				;
 
-//Extrae N caracteres desde la posicion P en la cadena C     extrae(C,N,P)
-extrae_c: 		EXT  PIZ param_cadena COMA expr COMA expr PDE;
+//Extrae N caracteres desde la posicion P en la cadena C extrae(C,N,P)
+extrae_c: 		EXT PIZ param_cadena COMA expr COMA expr PDE { $$.tipo = $3.tipo == STRING && $5.tipo == $7.tipo == INTEGER ? STRING : UNKNOWN;}				
+				; 
 
 //Concatena dos cadenas
-concat_c: 		CONCAT PIZ param_cadena COMA param_cadena PDE;
+concat_c: 		CONCAT PIZ param_cadena COMA param_cadena PDE { $$.tipo = $3.tipo == $5.tipo && $5.tipo == STRING ? STRING : UNKNOWN; }				
+				;
 
 //Devuelve la longitud de la cadena
-long_c: 		LONG PIZ param_cadena PDE;
+long_c: 		LONG PIZ param_cadena PDE { $$.tipo = $3.tipo == STRING ? INTEGER : UNKNOWN; }
+				;
 
 //Definición de los parámetros que se aceptarán
-param_cadena:  	llamada_funcion
-				|concat_c
-				|extrae_c
-				|CADTEXTO
+param_cadena:  	llamada_funcion { $$.tipo = $1.tipo; }
+				|concat_c		{ $$.tipo = $1.tipo; }
+				|extrae_c		{ $$.tipo = $1.tipo; }
+				|CADTEXTO		{ $$.tipo = STRING; }
 				;
 %%
 
