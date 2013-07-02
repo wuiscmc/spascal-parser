@@ -376,8 +376,7 @@ e_salidas: 	e_salidas COMA e_salida
 			|e_salida
 			;
 
-e_salida: 	CADTEXTO		
-			|expr 
+e_salida: 	expr 
 			;
 
 //*************************************************************
